@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOVA Selfbot</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #07070d;
+    color: #e0e0e0;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 15% 45%, #0d1b2a 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 15%, #1a0a2e 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 85%, #0a1a1f 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+}
+/* ===== LOGIN SCREEN ===== */
+#loginScreen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+    padding: 20px;
+}
+.login-wrapper {
+    display: flex;
+    gap: 24px;
+    max-width: 1100px;
+    width: 100%;
+    align-items: stretch;
+}
+@media (max-width: 860px) { .login-wrapper { flex-direction: column; align-items: center; } }
+.login-card {
+    background: linear-gradient(145deg, #12121a, #0d0d15);
+    border: 1px solid #1e1e30;
+    border-radius: 20px;
+    padding: 44px 40px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+    backdrop-filter: blur(10px);
+    flex-shrink: 0;
+}
+.login-card h1 {
+    font-size: 28px;
+    font-weight: 800;
+    text-align: center;
+    background: linear-gradient(135deg, #7c5cbf, #5b9aff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 4px;
+}
+.login-card .subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+    margin-bottom: 28px;
+}
+.input-group { margin-bottom: 16px; }
+.input-group label {
+    display: block; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.8px; color: #888; margin-bottom: 5px;
+}
+.input-group input, .input-group select {
+    width: 100%; padding: 11px 15px; background: #0a0a10;
+    border: 1px solid #1e1e30; border-radius: 10px; color: #fff;
+    font-size: 14px; font-family: 'Inter', sans-serif; transition: border 0.2s;
+}
+.input-group input:focus, .input-group select:focus {
+    outline: none; border-color: #5b7aff; box-shadow: 0 0 0 3px rgba(91,122,255,0.1);
+}
+.input-group select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+.btn-primary {
+    width: 100%; padding: 12px;
+    background: linear-gradient(135deg, #7c5cbf, #5b7aff);
+    border: none; border-radius: 10px; color: #fff; font-size: 15px;
+    font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;
+    transition: all 0.3s; margin-top: 4px;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(91,122,255,0.3); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+/* ===== ALT MANAGEMENT PANEL ===== */
+.alt-panel {
+    background: linear-gradient(145deg, #0f0f18, #0a0a12);
+    border: 1px solid #1a1a2e;
+    border-radius: 20px;
+    padding: 28px;
+    flex: 1;
+    min-width: 0;
+    max-width: 560px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+}
+.alt-panel h2 {
+    font-size: 18px; font-weight: 700; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 10px;
+}
+.alt-panel h2 .badge {
+    font-size: 9px; background: #7c5cbf; padding: 2px 8px;
+    border-radius: 20px; color: #fff; font-weight: 600;
+}
+.alt-panel > p { font-size: 12px; color: #666; margin-bottom: 18px; }
+.alt-tabs {
+    display: flex; gap: 6px; margin-bottom: 16px;
+    background: #0a0a10; border-radius: 10px; padding: 4px;
+}
+.alt-tab {
+    flex: 1; padding: 8px; text-align: center; font-size: 12px; font-weight: 600;
+    border-radius: 8px; cursor: pointer; transition: all 0.2s; color: #666;
+    border: none; background: transparent; font-family: 'Inter', sans-serif;
+}
+.alt-tab.active { background: linear-gradient(135deg, #7c5cbf, #5b7aff); color: #fff; }
+.alt-tab:hover:not(.active) { color: #aaa; }
+.alt-section { display: none; }
+.alt-section.active { display: block; }
+.alt-form-row { display: flex; gap: 10px; margin-bottom: 10px; }
+.alt-form-row .input-group { flex: 1; margin-bottom: 0; }
+.invite-input-row {
+    display: flex; gap: 8px; margin-bottom: 10px;
+}
+.invite-input-row input { flex: 1; }
+.invite-list {
+    max-height: 150px; overflow-y: auto; background: #0a0a10;
+    border-radius: 8px; border: 1px solid #1a1a2e; padding: 6px; margin-bottom: 10px;
+}
+.invite-list::-webkit-scrollbar { width: 4px; }
+.invite-list::-webkit-scrollbar-track { background: transparent; }
+.invite-list::-webkit-scrollbar-thumb { background: #2a2a40; border-radius: 4px; }
+.invite-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 10px; font-size: 12px; border-radius: 6px; transition: background 0.2s;
+}
+.invite-item:hover { background: #14141f; }
+.invite-item .code { color: #aaa; font-family: monospace; }
+.invite-item .del { color: #e05555; cursor: pointer; font-size: 14px; padding: 0 4px; }
+.invite-item .del:hover { color: #ff6b6b; }
+.alt-account-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; background: #0a0a10; border: 1px solid #1a1a2e;
+    border-radius: 8px; margin-bottom: 6px; font-size: 12px;
+}
+.alt-account-item .info { display: flex; flex-direction: column; gap: 2px; }
+.alt-account-item .info .email { color: #ccc; }
+.alt-account-item .info .meta { color: #555; font-size: 10px; }
+.alt-account-item .actions { display: flex; gap: 6px; }
+.alt-account-item .status-tag {
+    font-size: 9px; padding: 2px 8px; border-radius: 10px; font-weight: 600;
+}
+.status-tag.ready { background: #0d2a1a; color: #43b581; }
+.status-tag.joined { background: #1a1a3a; color: #5b7aff; }
+.status-tag.pending { background: #2a1a0d; color: #faa61a; }
+/* ===== DASHBOARD ===== */
+#dashboard { display: none; position: relative; z-index: 1; }
+.topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px; background: rgba(10,10,18,0.85);
+    backdrop-filter: blur(14px); border-bottom: 1px solid #1a1a2e;
+    position: sticky; top: 0; z-index: 100;
+}
+.topbar .logo {
+    font-size: 20px; font-weight: 800;
+    background: linear-gradient(135deg, #7c5cbf, #5b9aff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.topbar .status-area { display: flex; align-items: center; gap: 14px; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.status-dot.online { background: #43b581; box-shadow: 0 0 8px #43b581; }
+.status-dot.offline { background: #f04747; box-shadow: 0 0 8px #f04747; }
+.status-text { font-size: 13px; color: #888; }
+.topbar .user-tag {
+    font-size: 12px; color: #aaa; padding: 5px 12px;
+    background: #14141f; border-radius: 8px; border: 1px solid #1e1e30;
+}
+.dashboard-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 20px; padding: 24px 28px; max-width: 1400px; margin: 0 auto;
+}
+@media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
+.card {
+    background: linear-gradient(145deg, #12121a, #0d0d15);
+    border: 1px solid #1a1a2e; border-radius: 16px; padding: 22px;
+}
+.card h3 {
+    font-size: 13px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; color: #888; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+}
+.card h3 .badge {
+    font-size: 9px; background: #1a1a2e; padding: 2px 8px;
+    border-radius: 20px; color: #666; text-transform: none; letter-spacing: 0;
+}
+textarea {
+    width: 100%; height: 90px; padding: 11px 13px;
+    background: #0a0a10; border: 1px solid #1e1e30; border-radius: 10px;
+    color: #e0e0e0; font-size: 13px; font-family: 'Inter', monospace;
+    resize: vertical; transition: border 0.2s;
+}
+textarea:focus { outline: none; border-color: #5b7aff; }
+input[type="text"], input[type="number"], input[type="password"] {
+    width: 100%; padding: 10px 14px; background: #0a0a10;
+    border: 1px solid #1e1e30; border-radius: 8px; color: #e0e0e0;
+    font-size: 13px; font-family: 'Inter', sans-serif;
+}
+input:focus { outline: none; border-color: #5b7aff; }
+.form-row { display: flex; gap: 12px; margin-bottom: 10px; align-items: flex-end; }
+.form-row .form-group { flex: 1; }
+.form-group label {
+    display: block; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px; color: #666; margin-bottom: 4px;
+}
+.btn-small {
+    padding: 7px 16px;
+    background: linear-gradient(135deg, #7c5cbf, #5b7aff);
+    border: none; border-radius: 8px; color: #fff; font-size: 12px;
+    font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;
+    transition: all 0.2s; white-space: nowrap;
+}
+.btn-small:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(91,122,255,0.3); }
+.btn-small:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+.btn-small.secondary { background: #1a1a2e; border: 1px solid #2a2a40; }
+.btn-small.secondary:hover { background: #222238; box-shadow: none; }
+.btn-small.danger { background: #2a1515; border: 1px solid #3a2020; color: #e05555; }
+.btn-small.danger:hover { background: #3a2020; }
+.btn-small.success { background: #0d2a1a; border: 1px solid #1a3a2a; color: #43b581; }
+.btn-small.success:hover { background: #153a25; }
+.btn-stop { background: linear-gradient(135deg, #bf3a3a, #e05555) !important; }
+.btn-stop:hover { box-shadow: 0 4px 15px rgba(224,85,85,0.3) !important; }
+.channel-list {
+    max-height: 170px; overflow-y: auto; background: #0a0a10;
+    border-radius: 10px; border: 1px solid #1a1a2e; padding: 6px; margin-bottom: 10px;
+}
+.channel-list::-webkit-scrollbar { width: 4px; }
+.channel-list::-webkit-scrollbar-track { background: transparent; }
+.channel-list::-webkit-scrollbar-thumb { background: #2a2a40; border-radius: 4px; }
+.channel-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 9px; border-radius: 6px; font-size: 12px;
+    transition: background 0.2s; cursor: default;
+}
+.channel-item:hover { background: #14141f; }
+.channel-item input[type="checkbox"] { accent-color: #7c5cbf; width: 13px; height: 13px; }
+.channel-item .channel-name { color: #ccc; font-weight: 500; }
+.channel-item .channel-id { color: #555; font-size: 10px; margin-left: auto; font-family: monospace; }
+.queue-status {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 13px; background: #0a0a10; border-radius: 10px;
+    border: 1px solid #1a1a2e; font-size: 12px; margin-bottom: 10px;
+}
+.queue-status .count { font-weight: 700; color: #7c5cbf; }
+.queue-status .count.running { color: #43b581; }
+.queue-status .count.stopped { color: #f04747; }
+.progress-bar { width: 100%; height: 4px; background: #1a1a2e; border-radius: 2px; overflow: hidden; margin-top: 6px; }
+.progress-bar .fill { height: 100%; background: linear-gradient(90deg, #7c5cbf, #5b7aff); width: 0%; transition: width 0.3s; border-radius: 2px; }
+.logout-section { padding: 0 28px 24px; max-width: 1400px; margin: 0 auto; }
+.logout-section .card { display: flex; align-items: center; justify-content: space-between; }
+.logout-section .card p { font-size: 12px; color: #888; }
+.logout-section .card p strong { color: #e05555; }
+.toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: #12121a; border: 1px solid #1e1e30; border-radius: 12px;
+    padding: 13px 18px; font-size: 13px; color: #e0e0e0;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 9999;
+    display: none; animation: slideIn 0.3s ease;
+}
+@keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.toast.success { border-left: 3px solid #43b581; }
+.toast.error { border-left: 3px solid #f04747; }
+.toast.info { border-left: 3px solid #5b7aff; }
+.toggle {
+    position: relative; width: 38px; height: 20px;
+    background: #1a1a2e; border-radius: 10px; cursor: pointer; transition: background 0.3s; flex-shrink: 0;
+}
+.toggle.active { background: linear-gradient(135deg, #7c5cbf, #5b7aff); }
+.toggle::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: transform 0.3s;
+}
+.toggle.active::after { transform: translateX(18px); }
+.flex-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.flex-row .flex-left { display: flex; align-items: center; gap: 10px; }
+.empty-state { color: #444; font-size: 12px; padding: 16px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<!-- ===== LOGIN SCREEN + ALT MANAGER ===== -->
+<div id="loginScreen">
+    <div class="login-wrapper">
+        <!-- Login Card -->
+        <div class="login-card">
+            <h1>✦ NOVA</h1>
+            <p class="subtitle">Discord Automation Interface</p>
+            <div class="input-group">
+                <label>Discord Token</label>
+                <input type="password" id="tokenInput" placeholder="Enter your user token...">
+            </div>
+            <div class="input-group">
+                <label>Quick Select Alt</label>
+                <select id="altSelect">
+                    <option value="">— Login with saved alt —</option>
+                </select>
+            </div>
+            <button class="btn-primary" id="loginBtn">Initialize</button>
+            <p style="text-align:center; margin-top:14px; font-size:11px; color:#444;">
+                Token stored locally. Never sent to any server.
+            </p>
+            <p style="text-align:center; margin-top:4px; font-size:10px; color:#333;">
+                ⚠ User tokens violate Discord ToS. Use at own risk.
+            </p>
+        </div>
+
+        <!-- Alt Management Panel -->
+        <div class="alt-panel">
+            <h2>🛸 Alt Manager <span class="badge">BETA</span></h2>
+            <p>Create, manage, and auto-join servers with alt accounts.</p>
+            
+            <div class="alt-tabs">
+                <button class="alt-tab active" data-tab="create-tab">Create</button>
+                <button class="alt-tab" data-tab="import-tab">Import</button>
+                <button class="alt-tab" data-tab="alts-tab">My Alts</button>
+                <button class="alt-tab" data-tab="invites-tab">Invites</button>
+            </div>
+
+            <!-- Create Tab -->
+            <div class="alt-section active" id="create-tab">
+                <p style="font-size:11px; color:#666; margin-bottom:10px;">Fill in details to create a new Discord account. Captcha must be solved manually in a popup window.</p>
+                <div class="alt-form-row">
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="text" id="createEmail" placeholder="email@example.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <input type="password" id="createPassword" placeholder="Min 8 chars">
+                    </div>
+                </div>
+                <div class="alt-form-row">
+                    <div class="input-group">
+                        <label>Username</label>
+                        <input type="text" id="createUsername" placeholder="CoolName#1234 or just CoolName">
+                    </div>
+                    <div class="input-group">
+                        <label>Birthday</label>
+                        <input type="text" id="createDob" placeholder="2000-01-01">
+                    </div>
+                </div>
+                <button class="btn-small" id="createAltBtn" style="width:100%;">Create Account</button>
+            </div>
+
+            <!-- Import Tab -->
+            <div class="alt-section" id="import-tab">
+                <p style="font-size:11px; color:#666; margin-bottom:10px;">Import an existing alt account with its token.</p>
+                <div class="alt-form-row">
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="text" id="importEmail" placeholder="alt@email.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Token</label>
+                        <input type="password" id="importToken" placeholder="Discord user token">
+                    </div>
+                </div>
+                <button class="btn-small secondary" id="importAltBtn" style="width:100%;">Import Alt</button>
+            </div>
+
+            <!-- My Alts Tab -->
+            <div class="alt-section" id="alts-tab">
+                <div id="altListContainer">
+                    <div class="empty-state">No alt accounts saved yet.</div>
+                </div>
+                <div style="display:flex; gap:6px; margin-top:8px;">
+                    <button class="btn-small success" id="joinAllBtn" style="flex:1;">▶ Join All Servers</button>
+                    <button class="btn-small danger" id="clearAltsBtn">Clear All</button>
+                </div>
+            </div>
+
+            <!-- Invites Tab -->
+            <div class="alt-section" id="invites-tab">
+                <p style="font-size:11px; color:#666; margin-bottom:10px;">Save invite links. Alts will auto-join these servers.</p>
+                <div class="invite-input-row">
+                    <input type="text" id="inviteInput" placeholder="discord.gg/example or invite code">
+                    <button class="btn-small secondary" id="addInviteBtn">+ Add</button>
+                </div>
+                <div class="invite-list" id="inviteListContainer">
+                    <div class="empty-state">No invites added yet.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div id="dashboard">
+    <div class="topbar">
+        <div class="logo">✦ NOVA</div>
+        <div class="status-area">
+            <span class="status-dot offline" id="statusDot"></span>
+            <span class="status-text" id="statusText">Disconnected</span>
+            <span class="user-tag" id="userTag">—</span>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- DM REPLY -->
+        <div class="card">
+            <h3>📨 DM Auto-Reply <span class="badge">Once per user</span></h3>
+            <div class="flex-row">
+                <div class="flex-left">
+                    <span style="font-size:12px; color:#aaa;">Auto-Reply</span>
+                    <div class="toggle" id="dmToggle"></div>
+                </div>
+                <button class="btn-small secondary" id="fetchDMsBtn">Refresh DMs</button>
+            </div>
+            <div class="form-group" style="margin-bottom:10px;">
+                <label>Welcome Message (sent once per person)</label>
+                <textarea id="dmReplyMessage" placeholder="Sent only once when someone first DMs you...">Hey! Thanks for reaching out. I'll get back to you soon. 🚀</textarea>
+            </div>
+            <div style="background:#0a0a10; border-radius:8px; padding:10px; font-size:11px; color:#888; line-height:1.7;">
+                <div>✅ Auto-accepts friend requests</div>
+                <div>✅ Accepts DM requests automatically</div>
+                <div>✅ Sends welcome ONCE per user — ignores follow-ups</div>
+                <div>🛡 Humanized: typing indicator + random delays + science tracking</div>
+            </div>
+            <div style="margin-top:8px; font-size:11px; color:#555;">
+                Replied users: <strong id="repliedCount">0</strong>
+            </div>
+        </div>
+
+        <!-- CHANNEL AUTO-SENDER -->
+        <div class="card">
+            <h3>📢 Channel Auto-Sender <span class="badge">Multi-Channel</span></h3>
+            <div class="flex-row">
+                <div class="flex-left">
+                    <span style="font-size:12px; color:#aaa;">Auto-Send</span>
+                    <div class="toggle" id="channelToggle"></div>
+                </div>
+                <button class="btn-small secondary" id="fetchChannelsBtn">Load Channels</button>
+            </div>
+            <div class="form-group" style="margin-bottom:10px;">
+                <label>Message to Send</label>
+                <textarea id="channelMessage" placeholder="Message to send in selected channels...">🔥 NOVA Selfbot active — automated messaging system</textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Send Count</label>
+                    <input type="number" id="sendCount" value="2" min="1" max="100">
+                </div>
+                <div class="form-group">
+                    <label>Cooldown (sec)</label>
+                    <input type="number" id="sendCooldown" value="10" min="3" max="600">
+                </div>
+            </div>
+            <button class="btn-small" id="sendWithCooldownBtn" style="width:100%; margin-bottom:8px;">▶ Send with Cooldown</button>
+            <button class="btn-small btn-stop" id="stopSendBtn" style="width:100%; margin-bottom:10px; display:none;">⏹ Stop Sending</button>
+            <div class="queue-status">
+                <span>Status</span>
+                <span id="sendStatus"><span class="count" id="queueCount">0</span> / <span id="totalCount">0</span> messages sent</span>
+            </div>
+            <div class="progress-bar">
+                <div class="fill" id="progressFill"></div>
+            </div>
+            <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#666; margin-bottom:4px; display:block; margin-top:10px;">
+                Select Channels
+            </label>
+            <div class="channel-list" id="channelList">
+                <div class="empty-state">Click "Load Channels" to fetch servers & channels</div>
+            </div>
+        </div>
+
+        <!-- ACCOUNT INFO -->
+        <div class="card">
+            <h3>👤 Account</h3>
+            <div style="font-size:13px; line-height:1.9;">
+                <div style="display:flex; justify-content:space-between; padding:3px 0;">
+                    <span style="color:#666;">User</span>
+                    <span id="accountUser">—</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:3px 0;">
+                    <span style="color:#666;">ID</span>
+                    <span id="accountId" style="font-family:monospace; font-size:11px;">—</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:3px 0;">
+                    <span style="color:#666;">Friends</span>
+                    <span id="accountFriends">0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:3px 0;">
+                    <span style="color:#666;">DMs</span>
+                    <span id="accountDms">0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:3px 0;">
+                    <span style="color:#666;">Servers</span>
+                    <span id="accountServers">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOGS -->
+        <div class="card">
+            <h3>📋 Activity Log</h3>
+            <div style="max-height:160px; overflow-y:auto; background:#0a0a10; border-radius:8px; padding:10px; font-size:11px; font-family:monospace; line-height:1.7;" id="logArea">
+                <div style="color:#444;">Ready to initialize...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGOUT -->
+    <div class="logout-section">
+        <div class="card">
+            <div>
+                <p style="margin-bottom:4px;">⚠ <strong>Account terminated</strong> or want to switch?</p>
+                <p style="font-size:12px; color:#555;">Clears token from local storage.</p>
+            </div>
+            <button class="btn-small danger" id="logoutBtn">Logout</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ====== STATE ======
+let TOKEN = '';
+let USER = null;
+let WS = null;
+let isConnected = false;
+let dmReplyEnabled = false;
+let channelAutoSendEnabled = false;
+let selectedChannels = new Set();
+let allChannels = [];
+let friendsCount = 0;
+let dmCount = 0;
+let serverCount = 0;
+let heartbeatInterval = null;
+let reconnectTimeout = null;
+let sequence = null;
+let sessionId = null;
+let isSending = false;
+let stopSending = false;
+let repliedUsers = new Set();
+let clientUUID = null;
+
+// Alt accounts: stored in localStorage as JSON array
+let altAccounts = [];
+let savedInvites = [];
+
+// ====== DOM REFS ======
+const $ = id => document.getElementById(id);
+const toast = $('toast');
+const loginScreen = $('loginScreen');
+const dashboard = $('dashboard');
+const tokenInput = $('tokenInput');
+const loginBtn = $('loginBtn');
+const statusDot = $('statusDot');
+const statusText = $('statusText');
+const userTag = $('userTag');
+
+// ====== TOAST ======
+function showToast(msg, type = 'info') {
+    toast.textContent = msg;
+    toast.className = `toast ${type}`;
+    toast.style.display = 'block';
+    clearTimeout(toast._hide);
+    toast._hide = setTimeout(() => { toast.style.display = 'none'; }, 4000);
+}
+
+// ====== LOG ======
+function log(msg, type = '') {
+    const area = $('logArea');
+    const div = document.createElement('div');
+    const color = type === 'error' ? '#f04747' : type === 'success' ? '#43b581' : type === 'warn' ? '#faa61a' : '#888';
+    div.style.color = color;
+    div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight;
+}
+
+// ====== CLIENT UUID ======
+function generateClientUUID() {
+    const uuid = new Uint8Array(16);
+    crypto.getRandomValues(uuid);
+    uuid[6] = (uuid[6] & 0x0f) | 0x40;
+    uuid[8] = (uuid[8] & 0x3f) | 0x80;
+    let binary = '';
+    for (let i = 0; i < uuid.length; i++) binary += String.fromCharCode(uuid[i]);
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// ====== SCIENCE TRACKING ======
+function sendScienceEvent(eventType, properties = {}) {
+    if (!clientUUID) clientUUID = generateClientUUID();
+    const now = Date.now();
+    fetch('https://discord.com/api/v9/science', {
+        method: 'POST',
+        headers: getHeaders(false),
+        body: JSON.stringify({
+            events: [{
+                type: eventType,
+                properties: {
+                    client_send_timestamp: now,
+                    client_track_timestamp: now,
+                    client_uuid: clientUUID,
+                    ...properties
+                }
+            }]
+        })
+    }).catch(() => {});
+}
+
+// ====== HEADERS ======
+function getHeaders(includeScience = true) {
+    return {
+        'Authorization': TOKEN,
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'X-Discord-Locale': 'en-US',
+        'X-Discord-Timezone': 'America/New_York',
+        'X-Discord-Client-Version': '1.0.0',
+        'X-Super-Properties': btoa(JSON.stringify({
+            os: 'Windows', browser: 'Chrome', device: '',
+            system_locale: 'en-US',
+            browser_user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            browser_version: '120.0.0.0', os_version: '10',
+            referrer: '', referring_domain: '', referrer_current: '', referring_domain_current: '',
+            release_channel: 'stable', client_build_number: 284748, client_event_source: null
+        })),
+        'Origin': 'https://discord.com',
+        'Referer': 'https://discord.com/channels/@me',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-cache'
+    };
+}
+
+// ====== RANDOM DELAY ======
+function randomDelay(min, ms) {
+    return new Promise(r => setTimeout(r, Math.floor(Math.random() * (ms - min + 1) + min)));
+}
+
+// ====== TYPING INDICATOR ======
+async function triggerTyping(channelId) {
+    try {
+        await fetch(`https://discord.com/api/v9/channels/${channelId}/typing`, {
+            method: 'POST', headers: getHeaders()
+        });
+    } catch (e) {}
+}
+
+// ====== LOCAL STORAGE ======
+function saveConfig() {
+    const data = {
+        dmReplyMessage: $('dmReplyMessage').value,
+        channelMessage: $('channelMessage').value,
+        sendCount: $('sendCount').value,
+        sendCooldown: $('sendCooldown').value,
+        dmReplyEnabled,
+        channelAutoSendEnabled,
+        selectedChannels: Array.from(selectedChannels),
+        repliedUsers: Array.from(repliedUsers),
+        altAccounts: altAccounts,
+        savedInvites: savedInvites
+    };
+    localStorage.setItem('nova_config', JSON.stringify(data));
+}
+
+function loadConfig() {
+    try {
+        const raw = localStorage.getItem('nova_config');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (data.dmReplyMessage) $('dmReplyMessage').value = data.dmReplyMessage;
+        if (data.channelMessage) $('channelMessage').value = data.channelMessage;
+        if (data.sendCount) $('sendCount').value = data.sendCount;
+        if (data.sendCooldown) $('sendCooldown').value = data.sendCooldown;
+        if (data.dmReplyEnabled) { dmReplyEnabled = true; $('dmToggle').classList.add('active'); }
+        if (data.channelAutoSendEnabled) { channelAutoSendEnabled = true; $('channelToggle').classList.add('active'); }
+        if (data.selectedChannels) data.selectedChannels.forEach(id => selectedChannels.add(id));
+        if (data.repliedUsers) data.repliedUsers.forEach(id => repliedUsers.add(id));
+        if (data.altAccounts) altAccounts = data.altAccounts;
+        if (data.savedInvites) savedInvites = data.savedInvites;
+        $('repliedCount').textContent = repliedUsers.size;
+        renderAltList();
+        renderInviteList();
+        populateAltSelect();
+    } catch (e) {}
+}
+
+// ====== API HELPER ======
+async function discordAPI(method, path, body = null, retries = 3, customToken = null) {
+    const token = customToken || TOKEN;
+    const opts = {
+        method,
+        headers: {
+            ...getHeaders(),
+            'Authorization': token
+        },
+        body: body ? JSON.stringify(body) : undefined
+    };
+    
+    const res = await fetch(`https://discord.com/api/v9${path}`, opts);
+    
+    if (res.status === 429) {
+        const retryAfter = parseInt(res.headers.get('retry-after') || '3');
+        const jitter = Math.floor(Math.random() * 2000) + 500;
+        log(`Rate limited — waiting ${Math.round((retryAfter*1000+jitter)/1000)}s...`, 'warn');
+        await new Promise(r => setTimeout(r, (retryAfter * 1000) + jitter));
+        if (retries > 0) return discordAPI(method, path, body, retries - 1, customToken);
+    }
+    
+    if (res.status === 204) return null;
+    const text = await res.text();
+    try { return JSON.parse(text); } catch { return text; }
+}
+
+// ====== FETCH DATA ======
+async function fetchAccountInfo() {
+    const me = await discordAPI('GET', '/users/@me');
+    if (!me || me.id === undefined) { log('Failed to fetch account info', 'error'); return null; }
+    USER = me;
+    $('accountUser').textContent = `${me.username}#${me.discriminator}`;
+    $('accountId').textContent = me.id;
+    userTag.textContent = `${me.username}#${me.discriminator}`;
+    return me;
+}
+
+async function fetchRelationships() {
+    const rels = await discordAPI('GET', '/users/@me/relationships');
+    if (rels && Array.isArray(rels)) {
+        friendsCount = rels.filter(r => r.type === 1).length;
+        $('accountFriends').textContent = friendsCount;
+    }
+}
+
+async function fetchDMs() {
+    const dms = await discordAPI('GET', '/users/@me/channels');
+    if (dms && Array.isArray(dms)) {
+        dmCount = dms.filter(c => c.type === 1).length;
+        $('accountDms').textContent = dmCount;
+        return dms.filter(c => c.type === 1);
+    }
+    return [];
+}
+
+async function fetchGuilds() {
+    const guilds = await discordAPI('GET', '/users/@me/guilds');
+    if (guilds && Array.isArray(guilds)) {
+        serverCount = guilds.length;
+        $('accountServers').textContent = serverCount;
+        return guilds;
+    }
+    return [];
+}
+
+async function fetchChannelsForGuild(guildId) {
+    return await discordAPI('GET', `/guilds/${guildId}/channels`);
+}
+
+// ====== FRIEND REQUEST AUTO-ACCEPT ======
+async function acceptIncomingFriendRequests() {
+    const rels = await discordAPI('GET', '/users/@me/relationships');
+    if (!rels || !Array.isArray(rels)) return;
+    let accepted = 0;
+    for (const rel of rels) {
+        if (rel.type === 3) {
+            try {
+                await randomDelay(800, 2500);
+                await discordAPI('PUT', `/users/@me/relationships/${rel.id}`, {});
+                log(`Accepted friend request from ${rel.user?.username || rel.id}`, 'success');
+                sendScienceEvent('friend_request_accepted', { target_user_id: rel.id });
+                accepted++;
+            } catch (e) {
+                log(`Failed to accept friend request from ${rel.id}`, 'error');
+            }
+        }
+    }
+    if (accepted > 0) {
+        showToast(`Accepted ${accepted} pending friend request(s)`, 'success');
+        fetchRelationships();
+    }
+}
+
+// ====== DM REPLY (ONCE PER USER) ======
+async function acceptDMRequestAndReply(channelId, userId, username) {
+    if (!dmReplyEnabled) return;
+    if (repliedUsers.has(userId)) return;
+    
+    const msg = $('dmReplyMessage').value.trim();
+    if (!msg) return;
+    
+    try {
+        await randomDelay(600, 1800);
+        await triggerTyping(channelId);
+        sendScienceEvent('typing_started', { channel_id: channelId });
+        
+        const typingDuration = Math.floor(Math.random() * 3000) + 1500;
+        await randomDelay(typingDuration, typingDuration + 2000);
+        
+        await discordAPI('POST', `/channels/${channelId}/messages`, {
+            content: msg, nonce: Date.now().toString(), tts: false, flags: 0
+        });
+        
+        repliedUsers.add(userId);
+        $('repliedCount').textContent = repliedUsers.size;
+        saveConfig();
+        sendScienceEvent('message_send', { channel_id: channelId, channel_type: 1, message_type: 0 });
+        log(`Sent welcome DM to ${username || userId}`, 'success');
+        showToast(`Replied to ${username || userId}`, 'success');
+    } catch (e) {
+        log(`Failed to send DM reply to ${username || userId}`, 'error');
+    }
+}
+
+// ====== CHANNEL SENDER ======
+async function sendWithCooldown() {
+    if (isSending) { showToast('Already sending messages', 'warn'); return; }
+    const msg = $('channelMessage').value.trim();
+    if (!msg) { showToast('Enter a message to send', 'error'); return; }
+    const count = parseInt($('sendCount').value) || 1;
+    const cooldown = parseInt($('sendCooldown').value) || 5;
+    if (selectedChannels.size === 0) { showToast('Select at least one channel', 'error'); return; }
+
+    const channels = Array.from(selectedChannels);
+    const totalMessages = count * channels.length;
+    isSending = true; stopSending = false;
+    $('sendWithCooldownBtn').style.display = 'none';
+    $('stopSendBtn').style.display = 'block';
+    $('totalCount').textContent = totalMessages;
+    $('queueCount').textContent = '0';
+    $('queueCount').className = 'count running';
+    $('sendStatus').innerHTML = `<span class="count running" id="queueCount">0</span> / <span id="totalCount">${totalMessages}</span> messages sent`;
+    $('progressFill').style.width = '0%';
+    let sent = 0;
+    log(`Starting send: ${count}x to ${channels.length} channel(s), ${cooldown}s cooldown`, 'info');
+
+    for (let i = 0; i < count; i++) {
+        if (stopSending) break;
+        for (const chId of channels) {
+            if (stopSending) break;
+            try {
+                await randomDelay(500, 2000);
+                await triggerTyping(chId);
+                await randomDelay(800, 2500);
+                await discordAPI('POST', `/channels/${chId}/messages`, {
+                    content: msg, nonce: Date.now().toString(), tts: false, flags: 0
+                });
+                sent++;
+                $('queueCount').textContent = sent;
+                $('progressFill').style.width = `${Math.round((sent/totalMessages)*100)}%`;
+                log(`Sent to channel ${chId} (${sent}/${totalMessages})`, 'success');
+            } catch (e) {
+                log(`Failed to send to channel ${chId}`, 'error');
+                await randomDelay(1500, 3000);
+            }
+        }
+        if (i < count - 1 && !stopSending) {
+            log(`Cycle ${i+1}/${count} done — waiting ${cooldown}s...`, 'info');
+            for (let c = cooldown; c > 0; c--) {
+                if (stopSending) break;
+                $('sendStatus').innerHTML = `<span class="count running">⏳ Cooldown ${c}s</span> — ${sent}/${totalMessages} sent`;
+                await new Promise(r => setTimeout(r, 1000));
+            }
+        }
+    }
+
+    isSending = false;
+    $('sendWithCooldownBtn').style.display = 'block';
+    $('stopSendBtn').style.display = 'none';
+    if (stopSending) {
+        $('queueCount').className = 'count stopped';
+        $('sendStatus').innerHTML = `<span class="count stopped">⏹ Stopped</span> — ${sent}/${totalMessages} sent`;
+        showToast(`Stopped — ${sent} messages sent`, 'info');
+    } else {
+        $('queueCount').className = 'count';
+        $('progressFill').style.width = '100%';
+        $('sendStatus').innerHTML = `<span class="count" style="color:#43b581;">✓ Complete</span> — ${sent}/${totalMessages} sent`;
+        showToast(`Completed — ${sent} messages sent`, 'success');
+        setTimeout(() => {
+            $('sendStatus').innerHTML = `<span class="count" id="queueCount">0</span> / <span id="totalCount">0</span> messages sent`;
+            $('progressFill').style.width = '0%';
+        }, 5000);
+    }
+}
+
+// ====== LOAD CHANNELS UI ======
+async function loadChannelsUI() {
+    const guilds = await fetchGuilds();
+    const container = $('channelList');
+    container.innerHTML = '';
+    allChannels = [];
+
+    if (!guilds || guilds.length === 0) {
+        container.innerHTML = '<div class="empty-state">No servers found.</div>';
+        return;
+    }
+
+    for (const guild of guilds.slice(0, 10)) {
+        const channels = await fetchChannelsForGuild(guild.id);
+        if (!channels || !Array.isArray(channels)) continue;
+        const textChannels = channels.filter(c => c.type === 0);
+        for (const ch of textChannels) {
+            allChannels.push({ id: ch.id, name: `#${ch.name}`, guildName: guild.name });
+        }
+    }
+
+    if (allChannels.length === 0) {
+        container.innerHTML = '<div class="empty-state">No text channels found.</div>';
+        return;
+    }
+
+    for (const ch of allChannels) {
+        const div = document.createElement('div'); div.className = 'channel-item';
+        const cb = document.createElement('input'); cb.type = 'checkbox';
+        cb.checked = selectedChannels.has(ch.id);
+        cb.addEventListener('change', () => {
+            if (cb.checked) selectedChannels.add(ch.id); else selectedChannels.delete(ch.id);
+            saveConfig();
+        });
+        const name = document.createElement('span'); name.className = 'channel-name';
+        name.textContent = `${ch.name} (${ch.guildName})`;
+        const idSpan = document.createElement('span'); idSpan.className = 'channel-id';
+        idSpan.textContent = ch.id;
+        div.appendChild(cb); div.appendChild(name); div.appendChild(idSpan);
+        container.appendChild(div);
+    }
+    showToast(`Loaded ${allChannels.length} channels from ${guilds.length} servers`, 'info');
+}
+
+// ====== ALT MANAGEMENT ======
+function renderAltList() {
+    const container = $('altListContainer');
+    if (!altAccounts.length) {
+        container.innerHTML = '<div class="empty-state">No alt accounts saved yet.</div>';
+        return;
+    }
+    container.innerHTML = altAccounts.map((alt, i) => `
+        <div class="alt-account-item">
+            <div class="info">
+                <span class="email">${alt.email || 'No email'}</span>
+                <span class="meta">${alt.username || '?'} · ${alt.joinedServers || 0} servers joined · ${alt.status || 'ready'}</span>
+            </div>
+            <div class="actions">
+                <span class="status-tag ${alt.status === 'ready' ? 'ready' : 'joined'}">${alt.status || 'ready'}</span>
+                <span class="del" data-idx="${i}" onclick="deleteAlt(${i})">✕</span>
+            </div>
+        </div>
+    `).join('');
+    populateAltSelect();
+}
+
+function populateAltSelect() {
+    const sel = $('altSelect');
+    sel.innerHTML = '<option value="">— Login with saved alt —</option>' + 
+        altAccounts.map((a, i) => `<option value="${i}">${a.email || a.username || 'Alt ' + (i+1)}</option>`).join('');
+}
+
+function deleteAlt(idx) {
+    if (!confirm('Remove this alt?')) return;
+    altAccounts.splice(idx, 1);
+    saveConfig();
+    renderAltList();
+}
+
+function renderInviteList() {
+    const container = $('inviteListContainer');
+    if (!savedInvites.length) {
+        container.innerHTML = '<div class="empty-state">No invites added yet.</div>';
+        return;
+    }
+    container.innerHTML = savedInvites.map((inv, i) => `
+        <div class="invite-item">
+            <span class="code">discord.gg/${inv}</span>
+            <span class="del" onclick="deleteInvite(${i})">✕</span>
+        </div>
+    `).join('');
+}
+
+function deleteInvite(idx) {
+    savedInvites.splice(idx, 1);
+    saveConfig();
+    renderInviteList();
+}
+
+function extractInviteCode(url) {
+    // Extract code from full URLs or just the code
+    const match = url.match(/(?:discord\.(?:gg|com\/invite)\/)?([a-zA-Z0-9_-]+)/);
+    return match ? match[1] : url.trim();
+}
+
+async function joinServerWithToken(inviteCode, token, altEmail) {
+    try {
+        await randomDelay(1000, 3000);
+        const res = await fetch(`https://discord.com/api/v9/invites/${inviteCode}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': token,
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Origin': 'https://discord.com',
+                'Referer': 'https://discord.com/channels/@me'
+            },
+            body: '{}'
+        });
+        if (res.ok) {
+            log(`✅ Alt ${altEmail} joined discord.gg/${inviteCode}`, 'success');
+            return true;
+        } else {
+            const txt = await res.text();
+            log(`❌ Alt ${altEmail} failed to join ${inviteCode}: ${res.status}`, 'error');
+            return false;
+        }
+    } catch (e) {
+        log(`❌ Alt ${altEmail} error joining ${inviteCode}: ${e.message}`, 'error');
+        return false;
+    }
+}
+
+async function joinAllServersForAlt(alt, token) {
+    let joined = 0;
+    for (const inv of savedInvites) {
+        const success = await joinServerWithToken(inv, token, alt.email);
+        if (success) joined++;
+        await randomDelay(2000, 5000);
+    }
+    return joined;
+}
+
+// ====== GATEWAY ======
+function connectGateway() {
+    if (WS) { try { WS.close(); } catch(e) {} }
+
+    WS = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json');
+
+    WS.onopen = () => log('Gateway connected', 'success');
+
+    WS.onmessage = (event) => {
+        try { handleGatewayMessage(JSON.parse(event.data)); } catch (e) {}
+    };
+
+    WS.onclose = (e) => {
+        log(`Gateway disconnected (code: ${e.code})`, 'warn');
+        isConnected = false;
+        statusDot.className = 'status-dot offline';
+        statusText.textContent = 'Disconnected';
+        if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
+        reconnectTimeout = setTimeout(() => { if (TOKEN) connectGateway(); }, 5000);
+    };
+
+    WS.onerror = () => { log('Gateway error, reconnecting...', 'error'); WS.close(); };
+}
+
+function handleGatewayMessage(data) {
+    const { op, t, d, s } = data;
+    if (s) sequence = s;
+
+    switch (op) {
+        case 10: {
+            const hb = d.heartbeat_interval;
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            heartbeatInterval = setInterval(() => {
+                if (WS && WS.readyState === WebSocket.OPEN) WS.send(JSON.stringify({ op: 1, d: sequence }));
+            }, hb);
+
+            WS.send(JSON.stringify({
+                op: 2, d: {
+                    token: TOKEN, capabilities: 4093,
+                    properties: {
+                        os: 'Windows', browser: 'Chrome', device: '',
+                        system_locale: 'en-US',
+                        browser_user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        browser_version: '120.0.0.0', os_version: '10',
+                        referrer: '', referring_domain: '', referrer_current: '', referring_domain_current: '',
+                        release_channel: 'stable', client_build_number: 284748, client_event_source: null
+                    },
+                    presence: { status: 'online', since: 0, activities: [], afk: false },
+                    compress: false,
+                    client_state: { guild_hashes: {}, highest_last_message_id: '0', read_state_version: 0, user_guild_settings_version: -1, user_settings_version: -1 }
+                }
+            }));
+            break;
+        }
+        case 0: {
+            if (t === 'READY') {
+                isConnected = true;
+                statusDot.className = 'status-dot online';
+                statusText.textContent = 'Connected';
+                sessionId = d.session_id;
+                log(`Gateway ready — ${d.user.username}#${d.user.discriminator}`, 'success');
+                showToast('Connected to Discord Gateway', 'success');
+                acceptIncomingFriendRequests();
+                sendScienceEvent('session_start', { session_id: sessionId });
+            }
+            else if (t === 'MESSAGE_CREATE') {
+                const msg = d;
+                const channelType = msg.message?.channel_type !== undefined ? msg.message.channel_type : msg.channel_type;
+                const channelId = msg.message?.channel_id || msg.channel_id;
+                const authorId = msg.message?.author?.id || msg.author?.id;
+                const authorName = msg.message?.author?.username || msg.author?.username;
+                if (channelType === 1 && authorId !== USER?.id) {
+                    log(`DM received from ${authorName || authorId}`, 'info');
+                    acceptDMRequestAndReply(channelId, authorId, authorName || authorId);
+                }
+            }
+            else if (t === 'RELATIONSHIP_ADD') {
+                if (d.type === 3) {
+                    log(`Incoming friend request from ${d.user?.username || d.id}`, 'info');
+                    setTimeout(async () => {
+                        try {
+                            await discordAPI('PUT', `/users/@me/relationships/${d.id}`, {});
+                            log(`Auto-accepted friend request from ${d.user?.username || d.id}`, 'success');
+                            sendScienceEvent('friend_request_accepted', { target_user_id: d.id });
+                            fetchRelationships();
+                        } catch (e) { log(`Failed to accept friend request`, 'error'); }
+                    }, Math.floor(Math.random() * 2000) + 500);
+                }
+            }
+            break;
+        }
+        case 9: {
+            log('Invalid session, reconnecting...', 'error');
+            if (d === false) {
+                setTimeout(() => {
+                    if (WS && WS.readyState === WebSocket.OPEN) {
+                        WS.send(JSON.stringify({
+                            op: 2, d: {
+                                token: TOKEN, capabilities: 4093,
+                                properties: {
+                                    os: 'Windows', browser: 'Chrome', device: '',
+                                    system_locale: 'en-US',
+                                    browser_user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                                    browser_version: '120.0.0.0', os_version: '10',
+                                    referrer: '', referring_domain: '', referrer_current: '', referring_domain_current: '',
+                                    release_channel: 'stable', client_build_number: 284748, client_event_source: null
+                                },
+                                presence: { status: 'online', since: 0, activities: [], afk: false },
+                                compress: false,
+                                client_state: { guild_hashes: {}, highest_last_message_id: '0', read_state_version: 0, user_guild_settings_version: -1, user_settings_version: -1 }
+                            }
+                        }));
+                    }
+                }, 2000);
+            }
+            break;
+        }
+    }
+}
+
+// ====== INIT ======
+async function initialize() {
+    TOKEN = tokenInput.value.trim();
+    if (!TOKEN) { showToast('Enter a Discord token', 'error'); return; }
+
+    loginBtn.textContent = 'Connecting...';
+    loginBtn.disabled = true;
+
+    try {
+        clientUUID = generateClientUUID();
+        const me = await fetchAccountInfo();
+        if (!me || me.id === undefined) {
+            showToast('Invalid token or Discord API error', 'error');
+            log('Token verification failed', 'error');
+            loginBtn.textContent = 'Initialize';
+            loginBtn.disabled = false;
+            return;
+        }
+
+        log(`Authenticated as ${me.username}#${me.discriminator}`, 'success');
+        showToast(`Logged in as ${me.username}`, 'success');
+        sessionStorage.setItem('nova_token', TOKEN);
+        loadConfig();
+        await fetchRelationships();
+        await fetchDMs();
+        await fetchGuilds();
+        connectGateway();
+        await randomDelay(1000, 3000);
+        await acceptIncomingFriendRequests();
+        loginScreen.style.display = 'none';
+        dashboard.style.display = 'block';
+        loadChannelsUI();
+        log('NOVA Selfbot initialized — all systems online', 'success');
+        sendScienceEvent('app_opened', {});
+    } catch (e) {
+        log(`Init error: ${e.message}`, 'error');
+        showToast(`Connection failed: ${e.message}`, 'error');
+        loginBtn.textContent = 'Initialize';
+        loginBtn.disabled = false;
+    }
+}
+
+// ====== EVENT LISTENERS ======
+
+// Login
+loginBtn.addEventListener('click', initialize);
+tokenInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') initialize(); });
+
+// Alt select
+$('altSelect').addEventListener('change', function() {
+    const idx = parseInt(this.value);
+    if (!isNaN(idx) && altAccounts[idx]) {
+        tokenInput.value = altAccounts[idx].token;
+        showToast(`Selected alt: ${altAccounts[idx].email || altAccounts[idx].username}`, 'info');
+    }
+});
+
+// Create account (opens signup in new window for captcha)
+$('createAltBtn').addEventListener('click', async () => {
+    const email = $('createEmail').value.trim();
+    const password = $('createPassword').value.trim();
+    const username = $('createUsername').value.trim();
+    const dob = $('createDob').value.trim();
+    
+    if (!email || !password || !username) {
+        showToast('Fill in email, password, and username', 'error');
+        return;
+    }
+    if (password.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+    
+    // Open Discord register page for the user to fill captcha
+    const regUrl = `https://discord.com/register?email=${encodeURIComponent(email)}&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}${dob ? '&date_of_birth=' + encodeURIComponent(dob) : ''}`;
+    
+    showToast('Opening Discord registration in new tab. Complete captcha manually.', 'info');
+    const popup = window.open(regUrl, 'discord_register', 'width=800,height=700');
+    
+    // We can't auto-create accounts due to captcha, but we store the details
+    // and the user can come back and import the token later
+    altAccounts.push({
+        email,
+        password,
+        username,
+        dob,
+        token: '',
+        status: 'pending',
+        joinedServers: 0,
+        createdAt: Date.now()
+    });
+    saveConfig();
+    renderAltList();
+    log(`Alt account queued: ${email} — finish registration in the popup, then import the token`, 'info');
+    showToast('Account queued. Complete signup in the popup, then go to Import tab to add token.', 'info');
+    
+    // Clear fields
+    $('createEmail').value = '';
+    $('createPassword').value = '';
+    $('createUsername').value = '';
+    $('createDob').value = '';
+});
+
+// Import alt
+$('importAltBtn').addEventListener('click', async () => {
+    const email = $('importEmail').value.trim();
+    const token = $('importToken').value.trim();
+    if (!token) { showToast('Enter a valid token', 'error'); return; }
+    
+    // Verify the token
+    try {
+        const res = await fetch('https://discord.com/api/v9/users/@me', {
+            headers: { 'Authorization': token, 'Content-Type': 'application/json' }
+        });
+        if (!res.ok) { showToast('Invalid token', 'error'); return; }
+        const user = await res.json();
+        
+        // Check if already exists
+        const exists = altAccounts.find(a => a.token === token || a.email === email);
+        if (exists) { showToast('Alt already imported', 'warn'); return; }
+        
+        altAccounts.push({
+            email: email || `${user.username}@imported`,
+            password: '',
+            username: `${user.username}#${user.discriminator}`,
+            dob: '',
+            token: token,
+            status: 'ready',
+            joinedServers: 0,
+            userId
+ 	    altAccounts.push({
+            email: email || `${user.username}@imported`,
+            password: '',
+            username: `${user.username}#${user.discriminator}`,
+            dob: '',
+            token: token,
+            status: 'ready',
+            joinedServers: 0,
+            userId: user.id,
+            importedAt: Date.now()
+        });
+        saveConfig();
+        renderAltList();
+        populateAltSelect();
+        $('importEmail').value = '';
+        $('importToken').value = '';
+        log(`Imported alt: ${user.username}#${user.discriminator}`, 'success');
+        showToast(`Imported ${user.username}`, 'success');
+    } catch (e) {
+        showToast(`Failed: ${e.message}`, 'error');
+    }
+});
+
+// Join All Servers button
+$('joinAllBtn').addEventListener('click', async () => {
+    if (!savedInvites.length) { showToast('No invites saved', 'error'); return; }
+    const readyAlts = altAccounts.filter(a => a.token && a.status !== 'pending');
+    if (!readyAlts.length) { showToast('No ready alts with tokens', 'error'); return; }
+    
+    showToast(`Joining ${savedInvites.length} servers with ${readyAlts.length} alts...`, 'info');
+    log(`Starting bulk join: ${readyAlts.length} alts × ${savedInvites.length} servers`, 'info');
+    
+    for (const alt of readyAlts) {
+        log(`Processing alt: ${alt.email || alt.username}`, 'info');
+        const joined = await joinAllServersForAlt(alt, alt.token);
+        alt.joinedServers = (alt.joinedServers || 0) + joined;
+        alt.status = 'joined';
+        saveConfig();
+        renderAltList();
+        await randomDelay(3000, 6000);
+    }
+    showToast('Bulk join complete', 'success');
+    log('Bulk join operation finished', 'success');
+});
+
+// Clear alts
+$('clearAltsBtn').addEventListener('click', () => {
+    if (!confirm('Remove all saved alt accounts?')) return;
+    altAccounts = [];
+    saveConfig();
+    renderAltList();
+    populateAltSelect();
+    showToast('All alts cleared', 'info');
+});
+
+// Add invite
+$('addInviteBtn').addEventListener('click', () => {
+    const input = $('inviteInput');
+    const code = extractInviteCode(input.value.trim());
+    if (!code) { showToast('Enter a valid invite', 'error'); return; }
+    if (savedInvites.includes(code)) { showToast('Already saved', 'warn'); return; }
+    savedInvites.push(code);
+    saveConfig();
+    renderInviteList();
+    input.value = '';
+    showToast(`Added discord.gg/${code}`, 'success');
+});
+
+$('inviteInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('addInviteBtn').click(); });
+
+// Logout
+$('logoutBtn').addEventListener('click', () => {
+    if (WS) { try { WS.close(); } catch(e) {} }
+    if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
+    if (reconnectTimeout) { clearTimeout(reconnectTimeout); }
+    isSending = false; stopSending = true; isConnected = false;
+    TOKEN = ''; USER = null;
+    sessionStorage.removeItem('nova_token');
+    localStorage.removeItem('nova_config');
+    dashboard.style.display = 'none';
+    loginScreen.style.display = 'flex';
+    tokenInput.value = '';
+    loginBtn.textContent = 'Initialize';
+    loginBtn.disabled = false;
+    showToast('Logged out successfully', 'info');
+});
+
+// DM Toggle
+$('dmToggle').addEventListener('click', () => {
+    dmReplyEnabled = !dmReplyEnabled;
+    $('dmToggle').classList.toggle('active');
+    saveConfig();
+    log(`DM Auto-Reply: ${dmReplyEnabled ? 'ON' : 'OFF'}`);
+});
+
+// Channel Toggle
+$('channelToggle').addEventListener('click', () => {
+    channelAutoSendEnabled = !channelAutoSendEnabled;
+    $('channelToggle').classList.toggle('active');
+    saveConfig();
+    log(`Channel Auto-Send: ${channelAutoSendEnabled ? 'ON' : 'OFF'}`);
+});
+
+// Fetch Channels
+$('fetchChannelsBtn').addEventListener('click', loadChannelsUI);
+
+// Fetch DMs
+$('fetchDMsBtn').addEventListener('click', async () => {
+    await fetchDMs();
+    showToast(`Found ${dmCount} DM conversations`, 'info');
+});
+
+// Send with Cooldown
+$('sendWithCooldownBtn').addEventListener('click', sendWithCooldown);
+
+// Stop Send
+$('stopSendBtn').addEventListener('click', () => { stopSending = true; showToast('Stopping send...', 'warn'); });
+
+// Auto-save inputs
+['dmReplyMessage', 'channelMessage', 'sendCount', 'sendCooldown'].forEach(id => {
+    document.getElementById(id).addEventListener('input', saveConfig);
+});
+
+// Alt tabs
+document.querySelectorAll('.alt-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.alt-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.alt-section').forEach(s => s.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById(this.dataset.tab).classList.add('active');
+    });
+});
+
+// ====== CHECK SAVED SESSION ======
+(function() {
+    const savedToken = sessionStorage.getItem('nova_token');
+    if (savedToken) {
+        tokenInput.value = savedToken;
+        setTimeout(() => initialize(), 200);
+    }
+})();
+
+// ====== PERIODIC FRIEND REQUEST CHECK ======
+setInterval(() => {
+    if (isConnected && TOKEN) acceptIncomingFriendRequests();
+}, 30000);
+
+// ====== PERIODIC SCIENCE HEARTBEAT ======
+setInterval(() => {
+    if (isConnected && clientUUID) sendScienceEvent('heartbeat', {});
+}, 120000);
+</script>
+</body>
+</html>
