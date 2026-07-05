@@ -289,7 +289,6 @@ input:focus { outline: none; border-color: #5b7aff; }
 .flex-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .flex-row .flex-left { display: flex; align-items: center; gap: 10px; }
 .empty-state { color: #444; font-size: 12px; padding: 16px; text-align: center; }
-/* CAPTCHA Popup Styles */
 .captcha-overlay {
     display: none;
     position: fixed;
@@ -310,13 +309,8 @@ input:focus { outline: none; border-color: #5b7aff; }
     box-shadow: 0 25px 60px rgba(0,0,0,0.8);
     position: relative;
 }
-.captcha-popup h3 {
-    font-size: 16px; font-weight: 700; margin-bottom: 4px;
-    color: #e0e0e0;
-}
-.captcha-popup p {
-    font-size: 12px; color: #888; margin-bottom: 16px;
-}
+.captcha-popup h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; color: #e0e0e0; }
+.captcha-popup p { font-size: 12px; color: #888; margin-bottom: 16px; }
 .captcha-popup .close-btn {
     position: absolute; top: 12px; right: 16px;
     background: none; border: none; color: #666;
@@ -328,35 +322,26 @@ input:focus { outline: none; border-color: #5b7aff; }
     border: 1px solid #1e1e30; border-radius: 12px;
     background: #0a0a10; overflow: hidden; margin-bottom: 14px;
 }
-.captcha-frame iframe {
-    width: 100%; height: 100%; border: none;
-}
-.captcha-popup .btn-small {
-    width: 100%;
-}
+.captcha-frame iframe { width: 100%; height: 100%; border: none; }
+.captcha-popup .btn-small { width: 100%; }
 </style>
 </head>
 <body>
 
 <div id="toast" class="toast"></div>
 
-<!-- ===== CAPTCHA OVERLAY ===== -->
 <div class="captcha-overlay" id="captchaOverlay">
     <div class="captcha-popup">
         <button class="close-btn" id="captchaCloseBtn">&times;</button>
         <h3>🧩 Solve hCaptcha</h3>
-        <p>Solve the captcha to create your Discord account. The process will continue automatically after solving.</p>
+        <p>Solve the captcha to create your Discord account.</p>
         <div class="captcha-frame" id="captchaFrame">
             <iframe id="captchaIframe" srcdoc=""></iframe>
         </div>
         <button class="btn-small" id="captchaVerifyBtn">✅ I've Solved the Captcha</button>
-        <p style="font-size:10px; color:#555; margin-top:8px; text-align:center;">
-            If the captcha doesn't load, check your browser console or try a different browser.
-        </p>
     </div>
 </div>
 
-<!-- ===== LOGIN SCREEN + ALT MANAGER ===== -->
 <div id="loginScreen">
     <div class="login-wrapper">
         <div class="login-card">
@@ -373,94 +358,59 @@ input:focus { outline: none; border-color: #5b7aff; }
                 </select>
             </div>
             <button class="btn-primary" id="loginBtn">Initialize</button>
-            <p style="text-align:center; margin-top:14px; font-size:11px; color:#444;">
-                Token stored locally. Never sent to any server.
-            </p>
-            <p style="text-align:center; margin-top:4px; font-size:10px; color:#333;">
-                ⚠ User tokens violate Discord ToS. Use at own risk.
-            </p>
+            <p style="text-align:center; margin-top:14px; font-size:11px; color:#444;">Token stored locally. Never sent to any server.</p>
+            <p style="text-align:center; margin-top:4px; font-size:10px; color:#333;">⚠ User tokens violate Discord ToS. Use at own risk.</p>
         </div>
 
         <div class="alt-panel">
             <h2>🛸 Alt Manager <span class="badge">BETA</span></h2>
             <p>Create, manage, and auto-join servers with alt accounts.</p>
-            
             <div class="alt-tabs">
                 <button class="alt-tab active" data-tab="create-tab">Create</button>
                 <button class="alt-tab" data-tab="import-tab">Import</button>
                 <button class="alt-tab" data-tab="alts-tab">My Alts</button>
                 <button class="alt-tab" data-tab="invites-tab">Invites</button>
             </div>
-
             <div class="alt-section active" id="create-tab">
-                <p style="font-size:11px; color:#666; margin-bottom:10px;">Fill in details to create a new Discord account. Captcha will open in a popup window.</p>
+                <p style="font-size:11px; color:#666; margin-bottom:10px;">Fill in details to create a new Discord account.</p>
                 <div class="alt-form-row">
-                    <div class="input-group">
-                        <label>Email</label>
-                        <input type="text" id="createEmail" placeholder="email@example.com">
-                    </div>
-                    <div class="input-group">
-                        <label>Password</label>
-                        <input type="password" id="createPassword" placeholder="Min 8 chars">
-                    </div>
+                    <div class="input-group"><label>Email</label><input type="text" id="createEmail" placeholder="email@example.com"></div>
+                    <div class="input-group"><label>Password</label><input type="password" id="createPassword" placeholder="Min 8 chars"></div>
                 </div>
                 <div class="alt-form-row">
-                    <div class="input-group">
-                        <label>Username</label>
-                        <input type="text" id="createUsername" placeholder="CoolName">
-                    </div>
-                    <div class="input-group">
-                        <label>Birthday</label>
-                        <input type="text" id="createDob" placeholder="2000-01-01">
-                    </div>
+                    <div class="input-group"><label>Username</label><input type="text" id="createUsername" placeholder="CoolName"></div>
+                    <div class="input-group"><label>Birthday</label><input type="text" id="createDob" placeholder="2000-01-01"></div>
                 </div>
-                <div class="input-group">
-                    <label>2Captcha API Key (optional - auto-solve)</label>
-                    <input type="password" id="createCaptchaKey" placeholder="Leave empty for manual solving">
-                </div>
+                <div class="input-group"><label>2Captcha API Key (optional)</label><input type="password" id="createCaptchaKey" placeholder="Leave empty for manual solving"></div>
                 <button class="btn-small" id="createAltBtn" style="width:100%;">Create Account</button>
             </div>
-
             <div class="alt-section" id="import-tab">
                 <p style="font-size:11px; color:#666; margin-bottom:10px;">Import an existing alt account with its token.</p>
                 <div class="alt-form-row">
-                    <div class="input-group">
-                        <label>Email</label>
-                        <input type="text" id="importEmail" placeholder="alt@email.com">
-                    </div>
-                    <div class="input-group">
-                        <label>Token</label>
-                        <input type="password" id="importToken" placeholder="Discord user token">
-                    </div>
+                    <div class="input-group"><label>Email</label><input type="text" id="importEmail" placeholder="alt@email.com"></div>
+                    <div class="input-group"><label>Token</label><input type="password" id="importToken" placeholder="Discord user token"></div>
                 </div>
                 <button class="btn-small secondary" id="importAltBtn" style="width:100%;">Import Alt</button>
             </div>
-
             <div class="alt-section" id="alts-tab">
-                <div id="altListContainer">
-                    <div class="empty-state">No alt accounts saved yet.</div>
-                </div>
+                <div id="altListContainer"><div class="empty-state">No alt accounts saved yet.</div></div>
                 <div style="display:flex; gap:6px; margin-top:8px;">
                     <button class="btn-small success" id="joinAllBtn" style="flex:1;">▶ Join All Servers</button>
                     <button class="btn-small danger" id="clearAltsBtn">Clear All</button>
                 </div>
             </div>
-
             <div class="alt-section" id="invites-tab">
                 <p style="font-size:11px; color:#666; margin-bottom:10px;">Save invite links. Alts will auto-join these servers.</p>
                 <div class="invite-input-row">
-                    <input type="text" id="inviteInput" placeholder="discord.gg/example or invite code">
+                    <input type="text" id="inviteInput" placeholder="discord.gg/example">
                     <button class="btn-small secondary" id="addInviteBtn">+ Add</button>
                 </div>
-                <div class="invite-list" id="inviteListContainer">
-                    <div class="empty-state">No invites added yet.</div>
-                </div>
+                <div class="invite-list" id="inviteListContainer"><div class="empty-state">No invites added yet.</div></div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ===== DASHBOARD ===== -->
 <div id="dashboard">
     <div class="topbar">
         <div class="logo">✦ NOVA</div>
@@ -470,92 +420,52 @@ input:focus { outline: none; border-color: #5b7aff; }
             <span class="user-tag" id="userTag">—</span>
         </div>
     </div>
-
     <div class="dashboard-grid">
         <div class="card">
             <h3>📨 DM Auto-Reply <span class="badge">Once per user</span></h3>
             <div class="flex-row">
-                <div class="flex-left">
-                    <span style="font-size:12px; color:#aaa;">Auto-Reply</span>
-                    <div class="toggle" id="dmToggle"></div>
-                </div>
+                <div class="flex-left"><span style="font-size:12px;color:#aaa;">Auto-Reply</span><div class="toggle" id="dmToggle"></div></div>
                 <button class="btn-small secondary" id="fetchDMsBtn">Refresh DMs</button>
             </div>
-            <div class="form-group" style="margin-bottom:10px;">
-                <label>Welcome Message</label>
-                <textarea id="dmReplyMessage">Hey! Thanks for reaching out. I'll get back to you soon. 🚀</textarea>
-            </div>
-            <div style="background:#0a0a10; border-radius:8px; padding:10px; font-size:11px; color:#888; line-height:1.7;">
+            <div class="form-group" style="margin-bottom:10px;"><label>Welcome Message</label><textarea id="dmReplyMessage">Hey! Thanks for reaching out. 🚀</textarea></div>
+            <div style="background:#0a0a10;border-radius:8px;padding:10px;font-size:11px;color:#888;">
                 <div>✅ Auto-accepts friend requests</div>
                 <div>✅ Sends welcome ONCE per user</div>
                 <div id="dmStats">📊 0 messages sent</div>
             </div>
         </div>
-
         <div class="card">
             <h3>📢 Channel Spammer <span class="badge">Batch</span></h3>
             <div class="flex-row">
-                <div class="flex-left">
-                    <span style="font-size:12px; color:#aaa;">Spammer</span>
-                    <div class="toggle" id="spamToggle"></div>
-                </div>
+                <div class="flex-left"><span style="font-size:12px;color:#aaa;">Spammer</span><div class="toggle" id="spamToggle"></div></div>
                 <button class="btn-small secondary" id="fetchChannelsBtn">Load Channels</button>
             </div>
-            <div class="form-group">
-                <label>Message</label>
-                <textarea id="spamMessage" placeholder="Message to spam..."></textarea>
-            </div>
+            <div class="form-group"><label>Message</label><textarea id="spamMessage" placeholder="Message to spam..."></textarea></div>
             <div class="form-row">
-                <div class="form-group">
-                    <label>Delay (ms)</label>
-                    <input type="number" id="spamDelay" value="1500" min="500">
-                </div>
-                <div class="form-group">
-                    <label>Repeat</label>
-                    <input type="number" id="spamCount" value="3" min="1" max="100">
-                </div>
+                <div class="form-group"><label>Delay (ms)</label><input type="number" id="spamDelay" value="1500" min="500"></div>
+                <div class="form-group"><label>Repeat</label><input type="number" id="spamCount" value="3" min="1" max="100"></div>
             </div>
-            <div class="channel-list" id="channelListContainer">
-                <div class="empty-state">Click "Load Channels" first.</div>
-            </div>
-            <div class="queue-status">
-                <span>Status: <span class="count stopped" id="spamStatus">Idle</span></span>
-                <span>Queued: <span id="spamQueueCount">0</span></span>
-            </div>
+            <div class="channel-list" id="channelListContainer"><div class="empty-state">Click "Load Channels" first.</div></div>
+            <div class="queue-status"><span>Status: <span class="count stopped" id="spamStatus">Idle</span></span><span>Queued: <span id="spamQueueCount">0</span></span></div>
             <div class="progress-bar"><div class="fill" id="spamProgress"></div></div>
         </div>
-
         <div class="card">
             <h3>🔑 Token Checker <span class="badge">Validate all</span></h3>
-            <p style="font-size:12px; color:#888; margin-bottom:10px;">Check which stored alt tokens are still valid.</p>
-            <div id="tokenCheckResults" style="background:#0a0a10; border-radius:8px; padding:10px; font-size:11px; max-height:130px; overflow-y:auto; margin-bottom:10px;">
-                <div class="empty-state">No results yet.</div>
-            </div>
+            <p style="font-size:12px;color:#888;margin-bottom:10px;">Check which stored alt tokens are still valid.</p>
+            <div id="tokenCheckResults" style="background:#0a0a10;border-radius:8px;padding:10px;font-size:11px;max-height:130px;overflow-y:auto;margin-bottom:10px;"><div class="empty-state">No results yet.</div></div>
             <button class="btn-small secondary" id="checkTokensBtn" style="width:100%;">Check All Tokens</button>
         </div>
-
         <div class="card">
             <h3>⚙ Settings</h3>
-            <div class="form-group" style="margin-bottom:10px;">
-                <label>2Captcha API Key (auto-solve captchas)</label>
-                <input type="password" id="captchaKeyInput" placeholder="Enter your 2captcha.com API key">
-            </div>
-            <div style="display:flex; gap:6px;">
-                <button class="btn-small secondary" id="exportDataBtn" style="flex:1;">Export Data</button>
-                <button class="btn-small danger" id="logoutBtn" style="flex:1;">Logout</button>
-            </div>
+            <div class="form-group" style="margin-bottom:10px;"><label>2Captcha API Key</label><input type="password" id="captchaKeyInput" placeholder="2captcha.com API key"></div>
+            <div style="display:flex;gap:6px;"><button class="btn-small secondary" id="exportDataBtn" style="flex:1;">Export Data</button><button class="btn-small danger" id="logoutBtn" style="flex:1;">Logout</button></div>
         </div>
     </div>
-
-    <div class="logout-section">
-        <div class="card">
-            <p>⚠ <strong>Important:</strong> Using selfbots violates Discord ToS. Use at your own risk on alts only.</p>
-        </div>
-    </div>
+    <div class="logout-section"><div class="card"><p>⚠ <strong>Important:</strong> Selfbots violate Discord ToS. Use at your own risk on alts only.</p></div></div>
 </div>
 
 <script>
-// ─── State ──────────────────────────────────────────────────────────────────
+// NOVA Selfbot - Full Application Logic
 const state = {
     token: null,
     user: null,
@@ -563,291 +473,219 @@ const state = {
     invites: JSON.parse(localStorage.getItem('nova_invites') || '[]'),
     dmCache: JSON.parse(localStorage.getItem('nova_dm_cache') || '{}'),
     dmReplyEnabled: false,
-    dmReplyMessage: "Hey! Thanks for reaching out. I'll get back to you soon. 🚀",
+    dmReplyMessage: "Hey! Thanks for reaching out. 🚀",
     dmPollInterval: null,
     dmSentCount: 0,
     spamRunning: false,
-    spamInterval: null,
     channels: [],
     captchaKey: localStorage.getItem('nova_captcha_key') || '',
-    pendingRegistration: null,
+    pendingRegistration: null
 };
 
-// ─── Toast ───────────────────────────────────────────────────────────────────
-function showToast(msg, type = 'info') {
+function showToast(msg, type) {
     const t = document.getElementById('toast');
     t.textContent = msg;
-    t.className = `toast ${type}`;
+    t.className = 'toast ' + (type || 'info');
     t.style.display = 'block';
-    setTimeout(() => { t.style.display = 'none'; }, 3500);
+    setTimeout(function(){ t.style.display = 'none'; }, 3500);
 }
 
-// ─── API ─────────────────────────────────────────────────────────────────────
 const API = {
     BASE: 'https://discord.com/api/v9',
-    headers(token) {
-        return {
-            'Authorization': token,
-            'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        };
+    headers: function(t) {
+        return { 'Authorization': t, 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' };
     },
-    async request(token, path, options = {}) {
-        const resp = await fetch(`${this.BASE}${path}`, {
-            ...options,
-            headers: { ...this.headers(token), ...options.headers }
-        });
-        const data = resp.status === 204 ? null : await resp.json();
-        if (!resp.ok) throw new Error(data?.message || `HTTP ${resp.status}`);
+    request: async function(token, path, opts) {
+        opts = opts || {};
+        opts.headers = Object.assign({}, this.headers(token), opts.headers || {});
+        var resp = await fetch(this.BASE + path, opts);
+        var data = resp.status === 204 ? null : await resp.json();
+        if (!resp.ok) throw new Error(data && data.message || 'HTTP ' + resp.status);
         return data;
     },
-    getMe: (t) => API.request(t, '/users/@me'),
-    getDMs: (t) => API.request(t, '/users/@me/channels'),
-    getRelationships: (t) => API.request(t, '/users/@me/relationships'),
-    getGuilds: (t) => API.request(t, '/users/@me/guilds'),
-    getGuildChannels: (t, g) => API.request(t, `/guilds/${g}/channels`),
-    sendMessage: (t, c, content) => API.request(t, `/channels/${c}/messages`, {
-        method: 'POST',
-        body: JSON.stringify({ content })
-    }),
-    resolveInvite: (t, code) => API.request(t, `/invites/${code}?with_counts=true&with_expiration=true`),
-    joinInvite: (t, code) => API.request(t, `/invites/${code}`, { method: 'POST' }),
-    acceptFriendRequest: (t, userId) => API.request(t, `/users/@me/relationships`, {
-        method: 'PUT',
-        body: JSON.stringify({ id: userId, type: 1 })
-    }),
-    getChannelMessages: (t, c, limit = 1) => API.request(t, `/channels/${c}/messages?limit=${limit}`),
-    registerAccount: (email, password, username, dob, captchaKey) => {
-        return fetch(`${API.BASE}/auth/register`, {
+    getMe: function(t) { return API.request(t, '/users/@me'); },
+    getDMs: function(t) { return API.request(t, '/users/@me/channels'); },
+    getRelationships: function(t) { return API.request(t, '/users/@me/relationships'); },
+    getGuilds: function(t) { return API.request(t, '/users/@me/guilds'); },
+    getGuildChannels: function(t, g) { return API.request(t, '/guilds/' + g + '/channels'); },
+    sendMessage: function(t, c, content) {
+        return API.request(t, '/channels/' + c + '/messages', { method: 'POST', body: JSON.stringify({content:content}) });
+    },
+    resolveInvite: function(t, code) { return API.request(t, '/invites/' + code + '?with_counts=true&with_expiration=true'); },
+    joinInvite: function(t, code) { return API.request(t, '/invites/' + code, { method: 'POST' }); },
+    acceptFriendRequest: function(t, userId) {
+        return API.request(t, '/users/@me/relationships', { method: 'PUT', body: JSON.stringify({id:userId,type:1}) });
+    },
+    getChannelMessages: function(t, c, limit) {
+        return API.request(t, '/channels/' + c + '/messages?limit=' + (limit || 1));
+    },
+    registerAccount: function(email, password, username, dob, captchaKey) {
+        return fetch(this.BASE + '/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' },
-            body: JSON.stringify({
-                email, password, username,
-                date_of_birth: dob,
-                consent: true,
-                gift_code_sku_id: null,
-                captcha_key: captchaKey,
-            }),
-        }).then(r => r.json());
-    },
+            body: JSON.stringify({ email:email, password:password, username:username, date_of_birth:dob, consent:true, gift_code_sku_id:null, captcha_key:captchaKey })
+        }).then(function(r){ return r.json(); });
+    }
 };
 
-// ─── Storage ─────────────────────────────────────────────────────────────────
 function saveAlts() { localStorage.setItem('nova_alts', JSON.stringify(state.alts)); }
 function saveInvites() { localStorage.setItem('nova_invites', JSON.stringify(state.invites)); }
 function saveDmCache() { localStorage.setItem('nova_dm_cache', JSON.stringify(state.dmCache)); }
 
 function renderAltSelect() {
-    const sel = document.getElementById('altSelect');
+    var sel = document.getElementById('altSelect');
     sel.innerHTML = '<option value="">— Login with saved alt —</option>';
-    state.alts.forEach(a => {
+    for (var i = 0; i < state.alts.length; i++) {
+        var a = state.alts[i];
         if (a.token) {
-            const opt = document.createElement('option');
+            var opt = document.createElement('option');
             opt.value = a.token;
-            opt.textContent = `${a.email || a.username || 'Alt'} 🔑`;
+            opt.textContent = (a.email || a.username || 'Alt') + ' 🔑';
             sel.appendChild(opt);
         }
-    });
+    }
 }
 
 function renderAltsList() {
-    const container = document.getElementById('altListContainer');
+    var container = document.getElementById('altListContainer');
     if (state.alts.length === 0) {
         container.innerHTML = '<div class="empty-state">No alt accounts saved yet.</div>';
         return;
     }
-    container.innerHTML = state.alts.map((a, i) => `
-        <div class="alt-account-item">
-            <div class="info">
-                <span class="email">${a.email || 'No email'}</span>
-                <span class="meta">${a.username || '?'} • ${a.token ? '✅ token' : '❌ no token'}</span>
-            </div>
-            <div class="actions">
-                <span class="status-tag ${a.token ? 'ready' : 'pending'}">${a.token ? 'Ready' : 'No Token'}</span>
-                <span class="del" data-index="${i}" style="color:#e05555;cursor:pointer;">✕</span>
-            </div>
-        </div>
-    `).join('');
-    container.querySelectorAll('.del').forEach(el => {
-        el.addEventListener('click', () => {
-            const idx = parseInt(el.dataset.index);
-            state.alts.splice(idx, 1);
-            saveAlts();
-            renderAltsList();
-            renderAltSelect();
-            showToast('Alt removed', 'info');
-        });
-    });
+    var html = '';
+    for (var i = 0; i < state.alts.length; i++) {
+        var a = state.alts[i];
+        html += '<div class="alt-account-item"><div class="info"><span class="email">' + (a.email || 'No email') + '</span><span class="meta">' + (a.username || '?') + ' • ' + (a.token ? '✅ token' : '❌ no token') + '</span></div><div class="actions"><span class="status-tag ' + (a.token ? 'ready' : 'pending') + '">' + (a.token ? 'Ready' : 'No Token') + '</span><span class="del" data-index="' + i + '" style="color:#e05555;cursor:pointer;">✕</span></div></div>';
+    }
+    container.innerHTML = html;
+    var dels = container.querySelectorAll('.del');
+    for (var j = 0; j < dels.length; j++) {
+        (function(idx) {
+            dels[j].addEventListener('click', function() {
+                state.alts.splice(idx, 1);
+                saveAlts();
+                renderAltsList();
+                renderAltSelect();
+                showToast('Alt removed', 'info');
+            });
+        })(parseInt(dels[j].dataset.index));
+    }
 }
 
 function renderInvites() {
-    const container = document.getElementById('inviteListContainer');
+    var container = document.getElementById('inviteListContainer');
     if (state.invites.length === 0) {
         container.innerHTML = '<div class="empty-state">No invites added yet.</div>';
         return;
     }
-    container.innerHTML = state.invites.map((inv, i) => {
-        const code = inv.includes('/') ? inv.split('/').pop() : inv;
-        return `<div class="invite-item"><span class="code">discord.gg/${code}</span><span class="del" data-index="${i}" style="color:#e05555;cursor:pointer;">✕</span></div>`;
-    }).join('');
-    container.querySelectorAll('.del').forEach(el => {
-        el.addEventListener('click', () => {
-            const idx = parseInt(el.dataset.index);
-            state.invites.splice(idx, 1);
-            saveInvites();
-            renderInvites();
-            showToast('Invite removed', 'info');
-        });
-    });
+    var html = '';
+    for (var i = 0; i < state.invites.length; i++) {
+        var code = state.invites[i].includes('/') ? state.invites[i].split('/').pop() : state.invites[i];
+        html += '<div class="invite-item"><span class="code">discord.gg/' + code + '</span><span class="del" data-index="' + i + '" style="color:#e05555;cursor:pointer;">✕</span></div>';
+    }
+    container.innerHTML = html;
+    var dels = container.querySelectorAll('.del');
+    for (var j = 0; j < dels.length; j++) {
+        (function(idx) {
+            dels[j].addEventListener('click', function() {
+                state.invites.splice(idx, 1);
+                saveInvites();
+                renderInvites();
+                showToast('Invite removed', 'info');
+            });
+        })(parseInt(dels[j].dataset.index));
+    }
 }
 
-// ─── ALT TABS (FIX) ─────────────────────────────────────────────────────────
 function initAltTabs() {
-    document.querySelectorAll('.alt-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            document.querySelectorAll('.alt-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.alt-section').forEach(s => s.classList.remove('active'));
+    var tabs = document.querySelectorAll('.alt-tab');
+    for (var i = 0; i < tabs.length; i++) {
+        tabs[i].addEventListener('click', function() {
+            var allTabs = document.querySelectorAll('.alt-tab');
+            for (var j = 0; j < allTabs.length; j++) allTabs[j].classList.remove('active');
+            var allSects = document.querySelectorAll('.alt-section');
+            for (var k = 0; k < allSects.length; k++) allSects[k].classList.remove('active');
             this.classList.add('active');
-            const target = document.getElementById(this.dataset.tab);
+            var target = document.getElementById(this.dataset.tab);
             if (target) target.classList.add('active');
         });
-    });
-}
-
-// ─── CAPTCHA POPUP ──────────────────────────────────────────────────────────
-function openCaptchaPopup(registrationData) {
-    state.pendingRegistration = registrationData;
-    const overlay = document.getElementById('captchaOverlay');
-    overlay.classList.add('active');
-
-    // Inject an hCaptcha iframe
-    const iframe = document.getElementById('captchaIframe');
-    iframe.srcdoc = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <script src="https://hcaptcha.com/1/api.js" async defer></script>
-            <style>
-                body { margin: 0; display: flex; align-items: center; justify-content: center; height: 100%; background: #0a0a10; }
-                .h-captcha { transform: scale(0.88); transform-origin: center; }
-            </style>
-        </head>
-        <body>
-            <div class="h-captcha" data-sitekey="4c672d35-0701-42b2-9e87-5c4d3a1e3e0c" data-theme="dark"></div>
-        </body>
-        </html>
-    `;
-}
-
-function closeCaptchaPopup() {
-    document.getElementById('captchaOverlay').classList.remove('active');
-    state.pendingRegistration = null;
+    }
 }
 
 async function solveCaptchaWith2Captcha(apiKey) {
-    // Step 1: Get a captcha task ID
-    const submitResp = await fetch(`https://2captcha.com/in.php?key=${apiKey}&method=hcaptcha&sitekey=4c672d35-0701-42b2-9e87-5c4d3a1e3e0c&pageurl=${encodeURIComponent('https://discord.com/register')}&json=1`);
-    const submitData = await submitResp.json();
-    if (submitData.status !== 1) throw new Error('Failed to submit captcha to 2captcha: ' + JSON.stringify(submitData));
-    const taskId = submitData.request;
-
-    // Step 2: Poll for result
-    for (let i = 0; i < 60; i++) {
-        await new Promise(r => setTimeout(r, 5000));
-        const resultResp = await fetch(`https://2captcha.com/res.php?key=${apiKey}&action=get&id=${taskId}&json=1`);
-        const resultData = await resultResp.json();
+    var submitResp = await fetch('https://2captcha.com/in.php?key=' + apiKey + '&method=hcaptcha&sitekey=4c672d35-0701-42b2-9e87-5c4d3a1e3e0c&pageurl=' + encodeURIComponent('https://discord.com/register') + '&json=1');
+    var submitData = await submitResp.json();
+    if (submitData.status !== 1) throw new Error('2captcha submit failed: ' + JSON.stringify(submitData));
+    var taskId = submitData.request;
+    for (var i = 0; i < 60; i++) {
+        await new Promise(function(r){ setTimeout(r, 5000); });
+        var resultResp = await fetch('https://2captcha.com/res.php?key=' + apiKey + '&action=get&id=' + taskId + '&json=1');
+        var resultData = await resultResp.json();
         if (resultData.status === 1) return resultData.request;
-        if (resultData.request && resultData.request !== 'CAPCHA_NOT_READY') {
-            throw new Error('2captcha error: ' + resultData.request);
-        }
+        if (resultData.request && resultData.request !== 'CAPCHA_NOT_READY') throw new Error('2captcha: ' + resultData.request);
     }
-    throw new Error('Captcha solving timed out after 5 minutes');
+    throw new Error('Captcha solving timed out');
 }
 
 async function finishRegistration() {
-    if (!state.pendingRegistration) {
-        showToast('No pending registration', 'error');
-        return;
-    }
-
-    const { email, password, username, dob, apiKey } = state.pendingRegistration;
-    let captchaKey;
-
-    if (apiKey) {
-        // Auto-solve with 2Captcha
+    if (!state.pendingRegistration) { showToast('No pending registration', 'error'); return; }
+    var reg = state.pendingRegistration;
+    var captchaKey;
+    if (reg.apiKey) {
         showToast('Solving captcha via 2Captcha...', 'info');
         try {
-            captchaKey = await solveCaptchaWith2Captcha(apiKey);
-            showToast('Captcha solved! Creating account...', 'success');
-        } catch (e) {
-            showToast(`2Captcha failed: ${e.message}. Try manual solving.`, 'error');
-            closeCaptchaPopup();
+            captchaKey = await solveCaptchaWith2Captcha(reg.apiKey);
+            showToast('Captcha solved!', 'success');
+        } catch(e) {
+            showToast('2Captcha failed: ' + e.message, 'error');
+            document.getElementById('captchaOverlay').classList.remove('active');
+            state.pendingRegistration = null;
             return;
         }
     } else {
-        // Manual — user clicks "I've Solved" after solving in the iframe
-        // We'll try to register with an empty captcha_key and see if Discord accepts it
-        // or we can ask the user to provide the token
-        captchaKey = prompt('Enter the hCaptcha token (from the browser console, look for "captcha_token" or paste the response):');
-        if (!captchaKey) {
-            showToast('Captcha token required', 'error');
-            return;
-        }
+        captchaKey = prompt('Enter hCaptcha token (open console, type: hcaptcha.getResponse() and paste):');
+        if (!captchaKey) { showToast('Captcha token required', 'error'); return; }
     }
-
     try {
         showToast('Registering account...', 'info');
-        const result = await API.registerAccount(email, password, username, dob, captchaKey);
-        
+        var result = await API.registerAccount(reg.email, reg.password, reg.username, reg.dob, captchaKey);
         if (result.token) {
-            // Success! Account created with token
-            const alt = {
-                email,
-                password,
-                username,
-                dob,
-                token: result.token,
-                created: new Date().toISOString(),
-            };
-            state.alts.push(alt);
+            state.alts.push({ email:reg.email, password:reg.password, username:reg.username, dob:reg.dob, token:result.token, created:new Date().toISOString() });
             saveAlts();
             renderAltsList();
             renderAltSelect();
-            showToast(`Account created: ${username} (token saved)`, 'success');
-            closeCaptchaPopup();
-        } else if (result.captcha_key && Array.isArray(result.captcha_key)) {
-            // Captcha was wrong or expired
-            showToast(`Captcha error: ${result.captcha_key.join(', ')}. Try again.`, 'error');
+            showToast('Account created: ' + reg.username, 'success');
+            document.getElementById('captchaOverlay').classList.remove('active');
+            state.pendingRegistration = null;
+        } else if (result.captcha_key) {
+            showToast('Captcha error: ' + result.captcha_key.join(', '), 'error');
         } else {
-            showToast(`Registration failed: ${JSON.stringify(result)}`, 'error');
+            showToast('Registration failed: ' + JSON.stringify(result), 'error');
         }
-    } catch (e) {
-        showToast(`Error: ${e.message}`, 'error');
+    } catch(e) {
+        showToast('Error: ' + e.message, 'error');
     }
 }
 
-// ─── Login / Logout ─────────────────────────────────────────────────────────
 async function login(token) {
     try {
         state.user = await API.getMe(token);
         state.token = token;
-        showToast(`Logged in as ${state.user.username}`, 'success');
+        showToast('Logged in as ' + state.user.username, 'success');
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
         document.getElementById('statusDot').className = 'status-dot online';
         document.getElementById('statusText').textContent = 'Connected';
-        document.getElementById('userTag').textContent = `${state.user.username}#${state.user.discriminator}`;
+        document.getElementById('userTag').textContent = state.user.username + '#' + state.user.discriminator;
         if (state.dmReplyEnabled) startDmPolling();
-    } catch (e) {
-        showToast(`Invalid token: ${e.message}`, 'error');
+    } catch(e) {
+        showToast('Invalid token: ' + e.message, 'error');
     }
 }
 
 function logout() {
-    state.token = null;
-    state.user = null;
+    state.token = null; state.user = null;
     if (state.dmPollInterval) { clearInterval(state.dmPollInterval); state.dmPollInterval = null; }
-    if (state.spamInterval) { clearInterval(state.spamInterval); state.spamInterval = null; state.spamRunning = false; }
     document.getElementById('dashboard').style.display = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('statusDot').className = 'status-dot offline';
@@ -855,37 +693,34 @@ function logout() {
     showToast('Logged out', 'info');
 }
 
-// ─── DM Auto-Reply ──────────────────────────────────────────────────────────
 async function processDMs() {
     if (!state.token || !state.dmReplyEnabled) return;
     try {
-        const rels = await API.getRelationships(state.token);
-        for (const rel of rels) {
-            if (rel.type === 3) {
-                try {
-                    await API.acceptFriendRequest(state.token, rel.id);
-                    showToast(`Accepted friend: ${rel.user?.username || rel.id}`, 'info');
-                } catch (_) {}
+        var rels = await API.getRelationships(state.token);
+        for (var i = 0; i < rels.length; i++) {
+            if (rels[i].type === 3) {
+                try { await API.acceptFriendRequest(state.token, rels[i].id); showToast('Accepted friend', 'info'); } catch(_){}
             }
         }
-        const channels = await API.getDMs(state.token);
-        for (const ch of channels) {
+        var channels = await API.getDMs(state.token);
+        for (var j = 0; j < channels.length; j++) {
+            var ch = channels[j];
             if (ch.type !== 1) continue;
-            const cacheKey = `sent_${ch.id}`;
+            var cacheKey = 'sent_' + ch.id;
             if (state.dmCache[cacheKey]) continue;
-            const msgs = await API.getChannelMessages(state.token, ch.id, 1);
+            var msgs = await API.getChannelMessages(state.token, ch.id, 1);
             if (msgs && msgs.length > 0 && msgs[0].author && msgs[0].author.id !== state.user.id) {
                 try {
                     await API.sendMessage(state.token, ch.id, state.dmReplyMessage);
                     state.dmCache[cacheKey] = true;
                     state.dmSentCount++;
                     saveDmCache();
-                    document.querySelector('#dmStats').textContent = `📊 ${state.dmSentCount} messages sent`;
-                    showToast(`Replied to ${msgs[0].author.username}`, 'success');
-                } catch (_) {}
+                    document.querySelector('#dmStats').textContent = '📊 ' + state.dmSentCount + ' messages sent';
+                    showToast('Replied to ' + msgs[0].author.username, 'success');
+                } catch(_){}
             }
         }
-    } catch (_) {}
+    } catch(_){}
 }
 
 function startDmPolling() {
@@ -894,88 +729,61 @@ function startDmPolling() {
     processDMs();
 }
 
-function stopDmPolling() {
-    if (state.dmPollInterval) { clearInterval(state.dmPollInterval); state.dmPollInterval = null; }
-}
-
-// ─── Channel Spammer ────────────────────────────────────────────────────────
 async function fetchChannels() {
     if (!state.token) return;
     try {
-        const guilds = await API.getGuilds(state.token);
+        var guilds = await API.getGuilds(state.token);
         state.channels = [];
-        for (const g of guilds) {
-            const chs = await API.getGuildChannels(state.token, g.id);
-            chs.filter(c => c.type === 0).forEach(c => state.channels.push({ ...c, guildName: g.name }));
+        for (var i = 0; i < guilds.length; i++) {
+            var chs = await API.getGuildChannels(state.token, guilds[i].id);
+            for (var j = 0; j < chs.length; j++) {
+                if (chs[j].type === 0) state.channels.push({ id:chs[j].id, name:'#' + chs[j].name, guildName:guilds[i].name });
+            }
         }
-        renderChannels();
-        showToast(`Loaded ${state.channels.length} text channels`, 'info');
-    } catch (e) {
-        showToast(`Failed: ${e.message}`, 'error');
-    }
-}
-
-function renderChannels() {
-    const container = document.getElementById('channelListContainer');
-    if (state.channels.length === 0) {
-        container.innerHTML = '<div class="empty-state">No text channels found.</div>';
-        return;
-    }
-    container.innerHTML = state.channels.map(c => `
-        <div class="channel-item">
-            <input type="checkbox" value="${c.id}" data-name="${c.guildName} / ${c.name}">
-            <span class="channel-name">${c.guildName} / ${c.name}</span>
-            <span class="channel-id">${c.id}</span>
-        </div>
-    `).join('');
-    updateSpamQueueCount();
-}
-
-function updateSpamQueueCount() {
-    const checked = document.querySelectorAll('#channelListContainer input[type="checkbox"]:checked');
-    const count = checked.length * (parseInt(document.getElementById('spamCount').value) || 1);
-    document.getElementById('spamQueueCount').textContent = count;
+        var container = document.getElementById('channelListContainer');
+        if (state.channels.length === 0) { container.innerHTML = '<div class="empty-state">No text channels found.</div>'; return; }
+        var html = '';
+        for (var k = 0; k < state.channels.length; k++) {
+            var c = state.channels[k];
+            html += '<div class="channel-item"><input type="checkbox" value="' + c.id + '"><span class="channel-name">' + c.guildName + ' / ' + c.name + '</span><span class="channel-id">' + c.id + '</span></div>';
+        }
+        container.innerHTML = html;
+        showToast('Loaded ' + state.channels.length + ' channels', 'info');
+    } catch(e) { showToast('Failed: ' + e.message, 'error'); }
 }
 
 async function runSpammer() {
     if (state.spamRunning) {
         state.spamRunning = false;
-        if (state.spamInterval) { clearInterval(state.spamInterval); state.spamInterval = null; }
         document.getElementById('spamStatus').textContent = 'Stopped';
         document.getElementById('spamStatus').className = 'count stopped';
         document.getElementById('spamToggle').classList.remove('active');
         showToast('Spammer stopped', 'info');
         return;
     }
-    const msg = document.getElementById('spamMessage').value.trim();
+    var msg = document.getElementById('spamMessage').value.trim();
     if (!msg) { showToast('Enter a message', 'error'); return; }
-    const delay = parseInt(document.getElementById('spamDelay').value) || 1500;
-    const count = parseInt(document.getElementById('spamCount').value) || 1;
-    const checked = [...document.querySelectorAll('#channelListContainer input[type="checkbox"]:checked')];
+    var delay = parseInt(document.getElementById('spamDelay').value) || 1500;
+    var count = parseInt(document.getElementById('spamCount').value) || 1;
+    var checked = document.querySelectorAll('#channelListContainer input[type="checkbox"]:checked');
     if (checked.length === 0) { showToast('Select channels', 'error'); return; }
-
     state.spamRunning = true;
     document.getElementById('spamStatus').textContent = 'Running';
     document.getElementById('spamStatus').className = 'count running';
     document.getElementById('spamToggle').classList.add('active');
-
-    let total = checked.length * count;
-    let done = 0;
-
-    for (const cb of checked) {
+    var total = checked.length * count;
+    var done = 0;
+    for (var i = 0; i < checked.length; i++) {
         if (!state.spamRunning) break;
-        const chId = cb.value;
-        for (let i = 0; i < count; i++) {
+        var chId = checked[i].value;
+        for (var r = 0; r < count; r++) {
             if (!state.spamRunning) break;
             try {
                 await API.sendMessage(state.token, chId, msg);
                 done++;
-                document.getElementById('spamProgress').style.width = Math.round((done / total) * 100) + '%';
-                document.getElementById('spamQueueCount').textContent = total - done;
-            } catch (e) {
-                showToast(`Error: ${e.message}`, 'error');
-            }
-            await new Promise(r => setTimeout(r, delay));
+                document.getElementById('spamProgress').style.width = Math.round((done/total)*100) + '%';
+            } catch(e) { showToast('Error', 'error'); }
+            await new Promise(function(rs){ setTimeout(rs, delay); });
         }
     }
     state.spamRunning = false;
@@ -985,194 +793,155 @@ async function runSpammer() {
     showToast('Spam complete!', 'success');
 }
 
-// ─── Token Checker ──────────────────────────────────────────────────────────
 async function checkTokens() {
-    const container = document.getElementById('tokenCheckResults');
+    var container = document.getElementById('tokenCheckResults');
     container.innerHTML = '<div style="color:#888;">Checking...</div>';
-    const tokens = state.alts.filter(a => a.token).map(a => ({ email: a.email, token: a.token }));
-    if (tokens.length === 0) {
-        container.innerHTML = '<div class="empty-state">No tokens to check.</div>';
-        return;
+    var tokens = [];
+    for (var i = 0; i < state.alts.length; i++) {
+        if (state.alts[i].token) tokens.push({ email: state.alts[i].email, token: state.alts[i].token });
     }
-    let results = [];
-    for (const { email, token } of tokens) {
+    if (tokens.length === 0) { container.innerHTML = '<div class="empty-state">No tokens to check.</div>'; return; }
+    var results = [];
+    for (var j = 0; j < tokens.length; j++) {
         try {
-            const user = await API.getMe(token);
-            results.push(`✅ ${email || user.username} — ${user.username}#${user.discriminator}`);
-        } catch {
-            results.push(`❌ ${email || token.slice(0, 20)}... — Invalid/expired`);
+            var user = await API.getMe(tokens[j].token);
+            results.push('✅ ' + (tokens[j].email || user.username) + ' — ' + user.username + '#' + user.discriminator);
+        } catch(e) {
+            results.push('❌ ' + (tokens[j].email || tokens[j].token.slice(0,20) + '...') + ' — Invalid');
         }
     }
-    container.innerHTML = results.map(r => `<div style="padding:2px 0;">${r}</div>`).join('');
-    showToast(`Checked ${results.length} tokens`, 'info');
+    container.innerHTML = results.map(function(r){ return '<div style="padding:2px 0;">' + r + '</div>'; }).join('');
+    showToast('Checked ' + results.length + ' tokens', 'info');
 }
 
-// ─── Join All Servers ───────────────────────────────────────────────────────
 async function joinAllServers() {
     if (state.invites.length === 0) { showToast('No invites saved', 'error'); return; }
-    const tokens = state.alts.filter(a => a.token).map(a => a.token);
+    var tokens = [];
+    for (var i = 0; i < state.alts.length; i++) { if (state.alts[i].token) tokens.push(state.alts[i].token); }
     if (tokens.length === 0) { showToast('No alt tokens', 'error'); return; }
-    let total = state.invites.length * tokens.length;
-    let done = 0;
-    for (const inv of state.invites) {
-        const code = inv.includes('/') ? inv.split('/').pop() : inv;
-        for (const token of tokens) {
-            try { await API.joinInvite(token, code); } catch (_) {}
+    var done = 0;
+    for (var j = 0; j < state.invites.length; j++) {
+        var code = state.invites[j].includes('/') ? state.invites[j].split('/').pop() : state.invites[j];
+        for (var k = 0; k < tokens.length; k++) {
+            try { await API.joinInvite(tokens[k], code); } catch(_) {}
             done++;
-            await new Promise(r => setTimeout(r, 1500));
+            await new Promise(function(rs){ setTimeout(rs, 1500); });
         }
     }
-    showToast(`Processed ${done} join operations`, 'success');
+    showToast('Processed ' + done + ' joins', 'success');
 }
 
-// ─── Export Data ────────────────────────────────────────────────────────────
 function exportData() {
-    const data = { alts: state.alts, invites: state.invites, dmCache: state.dmCache };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
+    var data = { alts: state.alts, invites: state.invites, dmCache: state.dmCache };
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'nova_backup.json';
     a.click();
     showToast('Data exported', 'success');
 }
 
-// ─── Event Listeners ─────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
     initAltTabs();
 
-    // Login
-    const loginBtn = document.getElementById('loginBtn');
-    const tokenInput = document.getElementById('tokenInput');
-    const altSelect = document.getElementById('altSelect');
-
-    loginBtn.addEventListener('click', () => {
-        const token = tokenInput.value.trim() || altSelect.value;
+    document.getElementById('loginBtn').addEventListener('click', function() {
+        var token = document.getElementById('tokenInput').value.trim() || document.getElementById('altSelect').value;
         if (token) login(token);
     });
-    tokenInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') loginBtn.click(); });
 
-    // Logout
     document.getElementById('logoutBtn').addEventListener('click', logout);
 
-    // Create Account (with captcha popup)
-    document.getElementById('createAltBtn').addEventListener('click', () => {
-        const email = document.getElementById('createEmail').value.trim();
-        const password = document.getElementById('createPassword').value.trim();
-        const username = document.getElementById('createUsername').value.trim();
-        const dob = document.getElementById('createDob').value.trim();
-        const apiKey = document.getElementById('createCaptchaKey').value.trim() || state.captchaKey;
-
+    document.getElementById('createAltBtn').addEventListener('click', function() {
+        var email = document.getElementById('createEmail').value.trim();
+        var password = document.getElementById('createPassword').value.trim();
+        var username = document.getElementById('createUsername').value.trim();
+        var dob = document.getElementById('createDob').value.trim();
+        var apiKey = document.getElementById('createCaptchaKey').value.trim() || state.captchaKey;
         if (!email || !password || !username || !dob) {
             showToast('Fill all fields (email, password, username, birthday)', 'error');
             return;
         }
-
         if (apiKey) {
-            // Auto-solve with 2Captcha
-            showToast('Submitting to 2Captcha...', 'info');
-            finishRegistrationWith2Captcha(email, password, username, dob, apiKey);
+            showToast('Solving with 2Captcha...', 'info');
+            (async function(){
+                try {
+                    var captchaKey = await solveCaptchaWith2Captcha(apiKey);
+                    showToast('Captcha solved! Creating account...', 'success');
+                    var result = await API.registerAccount(email, password, username, dob, captchaKey);
+                    if (result.token) {
+                        state.alts.push({ email:email, password:password, username:username, dob:dob, token:result.token, created:new Date().toISOString() });
+                        saveAlts(); renderAltsList(); renderAltSelect();
+                        showToast('Account created: ' + username, 'success');
+                    } else {
+                        showToast('Registration failed: ' + JSON.stringify(result), 'error');
+                    }
+                } catch(e) {
+                    showToast('Error: ' + e.message, 'error');
+                }
+            })();
         } else {
-            // Open manual captcha popup
-            openCaptchaPopup({ email, password, username, dob, apiKey: null });
+            state.pendingRegistration = { email:email, password:password, username:username, dob:dob, apiKey:null };
+            document.getElementById('captchaOverlay').classList.add('active');
+            document.getElementById('captchaIframe').srcdoc = '<!DOCTYPE html><html><head><script src="https://hcaptcha.com/1/api.js" async defer></script><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100%;background:#0a0a10;}.h-captcha{transform:scale(0.88);transform-origin:center;}</style></head><body><div class="h-captcha" data-sitekey="4c672d35-0701-42b2-9e87-5c4d3a1e3e0c" data-theme="dark"></div></body></html>';
         }
     });
 
-    async function finishRegistrationWith2Captcha(email, password, username, dob, apiKey) {
-        try {
-            showToast('Solving captcha via 2Captcha...', 'info');
-            const captchaKey = await solveCaptchaWith2Captcha(apiKey);
-            showToast('Captcha solved! Creating account...', 'success');
-
-            const result = await API.registerAccount(email, password, username, dob, captchaKey);
-            if (result.token) {
-                state.alts.push({ email, password, username, dob, token: result.token, created: new Date().toISOString() });
-                saveAlts();
-                renderAltsList();
-                renderAltSelect();
-                showToast(`Account created: ${username}`, 'success');
-            } else {
-                showToast(`Registration failed: ${JSON.stringify(result)}`, 'error');
-            }
-        } catch (e) {
-            showToast(`Error: ${e.message}`, 'error');
-        }
-    }
-
-    // Captcha popup controls
-    document.getElementById('captchaCloseBtn').addEventListener('click', closeCaptchaPopup);
-    document.getElementById('captchaOverlay').addEventListener('click', (e) => {
-        if (e.target === e.currentTarget) closeCaptchaPopup();
+    document.getElementById('captchaCloseBtn').addEventListener('click', function() {
+        document.getElementById('captchaOverlay').classList.remove('active');
+        state.pendingRegistration = null;
     });
+
     document.getElementById('captchaVerifyBtn').addEventListener('click', finishRegistration);
 
-    // Import Alt
-    document.getElementById('importAltBtn').addEventListener('click', () => {
-        const email = document.getElementById('importEmail').value.trim();
-        const token = document.getElementById('importToken').value.trim();
+    document.getElementById('importAltBtn').addEventListener('click', function() {
+        var email = document.getElementById('importEmail').value.trim();
+        var token = document.getElementById('importToken').value.trim();
         if (!email || !token) { showToast('Email and token required', 'error'); return; }
-        state.alts.push({ email, password: '', username: '', dob: '', token });
-        saveAlts();
-        renderAltsList();
-        renderAltSelect();
+        state.alts.push({ email:email, password:'', username:'', dob:'', token:token });
+        saveAlts(); renderAltsList(); renderAltSelect();
         showToast('Alt imported', 'success');
     });
 
-    // Clear alts
-    document.getElementById('clearAltsBtn').addEventListener('click', () => {
+    document.getElementById('clearAltsBtn').addEventListener('click', function() {
         if (confirm('Clear all alt accounts?')) {
             state.alts = [];
-            saveAlts();
-            renderAltsList();
-            renderAltSelect();
+            saveAlts(); renderAltsList(); renderAltSelect();
             showToast('All alts cleared', 'info');
         }
     });
 
-    // Invites
-    document.getElementById('addInviteBtn').addEventListener('click', () => {
-        const inv = document.getElementById('inviteInput').value.trim();
+    document.getElementById('addInviteBtn').addEventListener('click', function() {
+        var inv = document.getElementById('inviteInput').value.trim();
         if (!inv) { showToast('Enter invite code', 'error'); return; }
         state.invites.push(inv);
-        saveInvites();
-        renderInvites();
+        saveInvites(); renderInvites();
         document.getElementById('inviteInput').value = '';
         showToast('Invite added', 'success');
     });
 
-    // Join all servers
     document.getElementById('joinAllBtn').addEventListener('click', joinAllServers);
 
-    // DM toggle
-    document.getElementById('dmToggle').addEventListener('click', () => {
+    document.getElementById('dmToggle').addEventListener('click', function() {
         state.dmReplyEnabled = !state.dmReplyEnabled;
         document.getElementById('dmToggle').classList.toggle('active');
         state.dmReplyMessage = document.getElementById('dmReplyMessage').value.trim() || state.dmReplyMessage;
         if (state.dmReplyEnabled && state.token) { startDmPolling(); showToast('DM auto-reply enabled', 'success'); }
-        else { stopDmPolling(); showToast('DM auto-reply disabled', 'info'); }
+        else { if (state.dmPollInterval) { clearInterval(state.dmPollInterval); state.dmPollInterval = null; } showToast('DM auto-reply disabled', 'info'); }
     });
 
     document.getElementById('fetchDMsBtn').addEventListener('click', processDMs);
-
-    // Channel spammer
     document.getElementById('fetchChannelsBtn').addEventListener('click', fetchChannels);
     document.getElementById('spamToggle').addEventListener('click', runSpammer);
-    document.getElementById('spamCount').addEventListener('change', updateSpamQueueCount);
-    document.getElementById('channelListContainer').addEventListener('change', updateSpamQueueCount);
-
-    // Token checker
     document.getElementById('checkTokensBtn').addEventListener('click', checkTokens);
 
-    // Captcha key setting
     document.getElementById('captchaKeyInput').value = state.captchaKey;
-    document.getElementById('captchaKeyInput').addEventListener('change', (e) => {
+    document.getElementById('captchaKeyInput').addEventListener('change', function(e) {
         state.captchaKey = e.target.value;
         localStorage.setItem('nova_captcha_key', state.captchaKey);
     });
 
-    // Export
     document.getElementById('exportDataBtn').addEventListener('click', exportData);
 
-    // Initial renders
     renderAltsList();
     renderInvites();
     renderAltSelect();
