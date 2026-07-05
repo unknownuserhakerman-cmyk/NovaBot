@@ -1,65 +1,27 @@
-// NOVA Selfbot - Full Application Logic
 var state = {
     token: null,
     user: null,
-    alts: JSON.parse(localStorage.getItem('nova_alts') || '[]'),
-    invites: JSON.parse(localStorage.getItem('nova_invites') || '[]'),
-    dmCache: JSON.parse(localStorage.getItem('nova_dm_cache') || '{}'),
-    dmReplyEnabled: false,
-    dmReplyMessage: "Hey! Thanks for reaching out. 🚀",
-    dmPollInterval: null,
-    dmSentCount: 0,
-    spamRunning: false,
     channels: [],
-    captchaKey: localStorage.getItem('nova_captcha_key') || '',
-    pendingRegistration: null,
-    fingerprint: localStorage.getItem('nova_fingerprint') || ''
+    running: false,
+    stopped: false
 };
 
+function $(id) { return document.getElementById(id); }
+
 function showToast(msg, type) {
-    var t = document.getElementById('toast');
+    var t = $('toast');
     t.textContent = msg;
     t.className = 'toast ' + (type || 'info');
     t.style.display = 'block';
-    setTimeout(function(){ t.style.display = 'none'; }, 3500);
+    setTimeout(function(){ t.style.display = 'none'; }, 3000);
 }
 
-// Generate a unique fingerprint like Discord client does
-function generateFingerprint() {
-    var chars = 'abcdef0123456789';
-    var result = '';
-    for (var i = 0; i < 32; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
+function rand(min, max) {
+    return Math.random() * (max - min) + min;
 }
 
-// Get or create a persistent fingerprint
-function getFingerprint() {
-    if (!state.fingerprint) {
-        state.fingerprint = generateFingerprint();
-        localStorage.setItem('nova_fingerprint', state.fingerprint);
-    }
-    return state.fingerprint;
-}
-
-// Try to fetch a real fingerprint from Discord's API
-async function fetchFingerprint() {
-    try {
-        var resp = await fetch('https://discord.com/api/v9/experiments', {
-            method: 'GET',
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            }
-        });
-        var data = await resp.json();
-        if (data && data.fingerprint) {
-            state.fingerprint = data.fingerprint;
-            localStorage.setItem('nova_fingerprint', state.fingerprint);
-            return data.fingerprint;
-        }
-    } catch(e) {}
-    return getFingerprint();
+function sleep(ms) {
+    return new Promise(function(r){ setTimeout(r, ms); });
 }
 
 var API = {
@@ -76,12 +38,10 @@ var API = {
         opts.headers = Object.assign({}, this.headers(token), opts.headers || {});
         var resp = await fetch(this.BASE + path, opts);
         var data = resp.status === 204 ? null : await resp.json();
-        if (!resp.ok) throw new Error(data && data.message || JSON.stringify(data));
+        if (!resp.ok) throw new Error(data && data.message || 'HTTP ' + resp.status);
         return data;
     },
     getMe: function(t) { return API.request(t, '/users/@me'); },
-    getDMs: function(t) { return API.request(t, '/users/@me/channels'); },
-    getRelationships: function(t) { return API.request(t, '/users/@me/relationships'); },
     getGuilds: function(t) { return API.request(t, '/users/@me/guilds'); },
     getGuildChannels: function(t, g) { return API.request(t, '/guilds/' + g + '/channels'); },
     sendMessage: function(t, c, content) {
@@ -90,277 +50,23 @@ var API = {
             body: JSON.stringify({content: content, nonce: Date.now().toString(), tts: false, flags: 0})
         });
     },
-    resolveInvite: function(t, code) {
-        return API.request(t, '/invites/' + code + '?with_counts=true&with_expiration=true');
-    },
-    joinInvite: function(t, code) {
-        return API.request(t, '/invites/' + code, { method: 'POST' });
-    },
-    acceptFriendRequest: function(t, userId) {
-        return API.request(t, '/users/@me/relationships', {
-            method: 'PUT',
-            body: JSON.stringify({id: userId, type: 1})
-        });
-    },
-    getChannelMessages: function(t, c, limit) {
-        return API.request(t, '/channels/' + c + '/messages?limit=' + (limit || 1));
-    },
-    registerAccount: async function(email, password, username, dob, captchaKey, fingerprint) {
-        // First try with captcha_key in body
-        var body = {
-            email: email,
-            password: password,
-            username: username,
-            date_of_birth: dob,
-            consent: true,
-            gift_code_sku_id: null,
-            captcha_key: captchaKey,
-            fingerprint: fingerprint || getFingerprint(),
-            promotional_email_opt_in: false
-        };
-
-        var resp = await fetch(this.BASE + '/auth/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'X-Captcha-Key': captchaKey,
-                'X-Fingerprint': fingerprint || getFingerprint()
-            },
-            body: JSON.stringify(body)
-        });
-        var data = await resp.json();
-
-        // If still getting captcha error, try to get the sitekey and rqdata
-        if (data.captcha_key && data.captcha_key.length > 0) {
-            return {
-                error: true,
-                captchaError: data.captcha_key,
-                captcha_sitekey: data.captcha_sitekey,
-                captcha_rqdata: data.captcha_rqdata,
-                full: data
-            };
-        }
-
-        // If we got a token, success
-        if (data.token) {
-            return { token: data.token, user: data };
-        }
-
-        return data;
+    triggerTyping: function(t, c) {
+        return API.request(t, '/channels/' + c + '/typing', { method: 'POST' });
     }
 };
-
-function saveAlts() { localStorage.setItem('nova_alts', JSON.stringify(state.alts)); }
-function saveInvites() { localStorage.setItem('nova_invites', JSON.stringify(state.invites)); }
-function saveDmCache() { localStorage.setItem('nova_dm_cache', JSON.stringify(state.dmCache)); }
-
-function renderAltSelect() {
-    var sel = document.getElementById('altSelect');
-    sel.innerHTML = '<option value="">\u2014 Login with saved alt \u2014</option>';
-    for (var i = 0; i < state.alts.length; i++) {
-        var a = state.alts[i];
-        if (a.token) {
-            var opt = document.createElement('option');
-            opt.value = a.token;
-            opt.textContent = (a.email || a.username || 'Alt') + ' \uD83D\uDD11';
-            sel.appendChild(opt);
-        }
-    }
-}
-
-function renderAltsList() {
-    var container = document.getElementById('altListContainer');
-    if (state.alts.length === 0) {
-        container.innerHTML = '<div class="empty-state">No alt accounts saved yet.</div>';
-        return;
-    }
-    var html = '';
-    for (var i = 0; i < state.alts.length; i++) {
-        var a = state.alts[i];
-        var status = a.token ? (a.valid === false ? 'invalid' : 'ready') : 'pending';
-        var label = a.token ? (a.valid === false ? 'Invalid' : 'Ready') : 'No Token';
-        var cls = a.token ? (a.valid === false ? 'pending' : 'ready') : 'pending';
-        html += '<div class="alt-account-item"><div class="info"><span class="email">' + (a.email || 'No email') + '</span><span class="meta">' + (a.username || '?') + ' \u2022 ' + (a.token ? '\u2705 token' : '\u274C no token') + '</span></div><div class="actions"><span class="status-tag ' + cls + '">' + label + '</span><span class="del" data-index="' + i + '" style="color:#e05555;cursor:pointer;">\u2715</span></div></div>';
-    }
-    container.innerHTML = html;
-    var dels = container.querySelectorAll('.del');
-    for (var j = 0; j < dels.length; j++) {
-        (function(idx) {
-            dels[j].addEventListener('click', function() {
-                state.alts.splice(idx, 1);
-                saveAlts();
-                renderAltsList();
-                renderAltSelect();
-                showToast('Alt removed', 'info');
-            });
-        })(parseInt(dels[j].dataset.index));
-    }
-}
-
-function renderInvites() {
-    var container = document.getElementById('inviteListContainer');
-    if (state.invites.length === 0) {
-        container.innerHTML = '<div class="empty-state">No invites added yet.</div>';
-        return;
-    }
-    var html = '';
-    for (var i = 0; i < state.invites.length; i++) {
-        var code = state.invites[i].includes('/') ? state.invites[i].split('/').pop() : state.invites[i];
-        html += '<div class="invite-item"><span class="code">discord.gg/' + code + '</span><span class="del" data-index="' + i + '" style="color:#e05555;cursor:pointer;">\u2715</span></div>';
-    }
-    container.innerHTML = html;
-    var dels = container.querySelectorAll('.del');
-    for (var j = 0; j < dels.length; j++) {
-        (function(idx) {
-            dels[j].addEventListener('click', function() {
-                state.invites.splice(idx, 1);
-                saveInvites();
-                renderInvites();
-                showToast('Invite removed', 'info');
-            });
-        })(parseInt(dels[j].dataset.index));
-    }
-}
-
-function initAltTabs() {
-    var tabs = document.querySelectorAll('.alt-tab');
-    for (var i = 0; i < tabs.length; i++) {
-        tabs[i].addEventListener('click', function() {
-            var allTabs = document.querySelectorAll('.alt-tab');
-            for (var j = 0; j < allTabs.length; j++) allTabs[j].classList.remove('active');
-            var allSects = document.querySelectorAll('.alt-section');
-            for (var k = 0; k < allSects.length; k++) allSects[k].classList.remove('active');
-            this.classList.add('active');
-            var target = document.getElementById(this.dataset.tab);
-            if (target) target.classList.add('active');
-        });
-    }
-}
-
-async function solveCaptchaWith2Captcha(apiKey, sitekey, rqdata) {
-    // Use the correct sitekey (fallback to default if not provided)
-    var sk = sitekey || '4c672d35-0701-42b2-88c3-78380b0db560';
-    var url = 'https://2captcha.com/in.php?key=' + apiKey + '&method=hcaptcha&sitekey=' + sk + '&pageurl=' + encodeURIComponent('https://discord.com/register') + '&json=1';
-    
-    // Add rqdata if provided (for enterprise)
-    if (rqdata) {
-        url += '&data=' + encodeURIComponent(rqdata);
-    }
-    
-    var submitResp = await fetch(url);
-    var submitData = await submitResp.json();
-    
-    if (submitData.status !== 1) {
-        throw new Error('2captcha submit failed: ' + JSON.stringify(submitData));
-    }
-    
-    var taskId = submitData.request;
-    showToast('2Captcha task: ' + taskId + ' (waiting...)', 'info');
-    
-    for (var i = 0; i < 120; i++) { // Wait up to 10 minutes
-        await new Promise(function(r){ setTimeout(r, 5000); });
-        var resultResp = await fetch('https://2captcha.com/res.php?key=' + apiKey + '&action=get&id=' + taskId + '&json=1');
-        var resultData = await resultResp.json();
-        if (resultData.status === 1) {
-            showToast('Captcha solved!', 'success');
-            return resultData.request;
-        }
-        if (resultData.request && resultData.request !== 'CAPCHA_NOT_READY') {
-            throw new Error('2captcha: ' + resultData.request);
-        }
-    }
-    throw new Error('Captcha solving timed out after 10 minutes');
-}
-
-async function attemptRegistration(email, password, username, dob, apiKey) {
-    // Step 1: Get a fresh fingerprint
-    var fp = await fetchFingerprint();
-    showToast('Using fingerprint: ' + fp.slice(0, 8) + '...', 'info');
-    
-    // Step 2: Try 2Captcha first if key provided
-    if (apiKey) {
-        showToast('Solving captcha via 2Captcha...', 'info');
-        try {
-            var captchaToken = await solveCaptchaWith2Captcha(apiKey);
-            showToast('Attempting registration...', 'info');
-            var result = await API.registerAccount(email, password, username, dob, captchaToken, fp);
-            
-            if (result.token) {
-                return { success: true, token: result.token, user: result.user };
-            }
-            
-            // If captcha error with new sitekey, retry with correct sitekey
-            if (result.captchaError && result.captcha_sitekey) {
-                showToast('Retrying with correct sitekey...', 'info');
-                captchaToken = await solveCaptchaWith2Captcha(apiKey, result.captcha_sitekey, result.captcha_rqdata);
-                result = await API.registerAccount(email, password, username, dob, captchaToken, fp);
-                
-                if (result.token) {
-                    return { success: true, token: result.token, user: result.user };
-                }
-            }
-            
-            return { success: false, error: JSON.stringify(result) };
-        } catch(e) {
-            return { success: false, error: e.message };
-        }
-    } else {
-        // Manual captcha - just store data and return
-        return { success: false, needsManual: true };
-    }
-}
-
-async function finishRegistration() {
-    if (!state.pendingRegistration) {
-        showToast('No pending registration', 'error');
-        return;
-    }
-    
-    var reg = state.pendingRegistration;
-    var captchaKey = prompt('Enter hCaptcha token:\n(Open browser console on hCaptcha iframe, run: hcaptcha.getResponse() )');
-    if (!captchaKey) { showToast('Captcha token required', 'error'); return; }
-    
-    try {
-        showToast('Registering account...', 'info');
-        var fp = await fetchFingerprint();
-        var result = await API.registerAccount(reg.email, reg.password, reg.username, reg.dob, captchaKey, fp);
-        
-        if (result.token) {
-            state.alts.push({
-                email: reg.email,
-                password: reg.password,
-                username: reg.username,
-                dob: reg.dob,
-                token: result.token,
-                valid: true,
-                created: new Date().toISOString()
-            });
-            saveAlts();
-            renderAltsList();
-            renderAltSelect();
-            showToast('Account created: ' + reg.username, 'success');
-            document.getElementById('captchaOverlay').classList.remove('active');
-            state.pendingRegistration = null;
-        } else {
-            showToast('Registration failed: ' + JSON.stringify(result), 'error');
-        }
-    } catch(e) {
-        showToast('Error: ' + e.message, 'error');
-    }
-}
 
 async function login(token) {
     try {
         state.user = await API.getMe(token);
         state.token = token;
+        localStorage.setItem('nova_token', token);
         showToast('Logged in as ' + state.user.username, 'success');
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('dashboard').style.display = 'block';
-        document.getElementById('statusDot').className = 'status-dot online';
-        document.getElementById('statusText').textContent = 'Connected';
-        document.getElementById('userTag').textContent = state.user.username + '#' + state.user.discriminator;
-        if (state.dmReplyEnabled) startDmPolling();
+        $('loginScreen').style.display = 'none';
+        $('dashboard').style.display = 'block';
+        $('statusDot').className = 'status-dot online';
+        $('statusText').textContent = 'Connected';
+        $('userTag').textContent = state.user.username + '#' + state.user.discriminator;
+        await loadChannels();
     } catch(e) {
         showToast('Invalid token: ' + e.message, 'error');
     }
@@ -369,325 +75,197 @@ async function login(token) {
 function logout() {
     state.token = null;
     state.user = null;
-    if (state.dmPollInterval) { clearInterval(state.dmPollInterval); state.dmPollInterval = null; }
-    document.getElementById('dashboard').style.display = 'none';
-    document.getElementById('loginScreen').style.display = 'flex';
-    document.getElementById('statusDot').className = 'status-dot offline';
-    document.getElementById('statusText').textContent = 'Disconnected';
+    state.running = false;
+    state.stopped = true;
+    localStorage.removeItem('nova_token');
+    $('dashboard').style.display = 'none';
+    $('loginScreen').style.display = 'flex';
+    $('statusDot').className = 'status-dot offline';
+    $('statusText').textContent = 'Disconnected';
     showToast('Logged out', 'info');
 }
 
-async function processDMs() {
-    if (!state.token || !state.dmReplyEnabled) return;
-    try {
-        var rels = await API.getRelationships(state.token);
-        for (var i = 0; i < rels.length; i++) {
-            if (rels[i].type === 3) {
-                try {
-                    await API.acceptFriendRequest(state.token, rels[i].id);
-                    showToast('Accepted friend', 'info');
-                } catch(_){}
-            }
-        }
-        var channels = await API.getDMs(state.token);
-        for (var j = 0; j < channels.length; j++) {
-            var ch = channels[j];
-            if (ch.type !== 1) continue;
-            var cacheKey = 'sent_' + ch.id;
-            if (state.dmCache[cacheKey]) continue;
-            var msgs = await API.getChannelMessages(state.token, ch.id, 1);
-            if (msgs && msgs.length > 0 && msgs[0].author && msgs[0].author.id !== state.user.id) {
-                try {
-                    await API.sendMessage(state.token, ch.id, state.dmReplyMessage);
-                    state.dmCache[cacheKey] = true;
-                    state.dmSentCount++;
-                    saveDmCache();
-                    document.querySelector('#dmStats').textContent = '\uD83D\uDCCA ' + state.dmSentCount + ' messages sent';
-                    showToast('Replied to ' + msgs[0].author.username, 'success');
-                } catch(_){}
-            }
-        }
-    } catch(_){}
-}
-
-function startDmPolling() {
-    if (state.dmPollInterval) clearInterval(state.dmPollInterval);
-    state.dmPollInterval = setInterval(processDMs, 5000);
-    processDMs();
-}
-
-async function fetchChannels() {
+async function loadChannels() {
     if (!state.token) return;
     try {
-        var guilds = await API.getGuilds(state.token);
+        $('channelList').innerHTML = '<div class="empty-state" style="color:#888;">Loading channels...</div>';
         state.channels = [];
+        var guilds = await API.getGuilds(state.token);
         for (var i = 0; i < guilds.length; i++) {
             var chs = await API.getGuildChannels(state.token, guilds[i].id);
             for (var j = 0; j < chs.length; j++) {
-                if (chs[j].type === 0) state.channels.push({
-                    id: chs[j].id,
-                    name: '#' + chs[j].name,
-                    guildName: guilds[i].name
-                });
+                if (chs[j].type === 0) {
+                    state.channels.push({ id: chs[j].id, name: chs[j].name, guild: guilds[i].name });
+                }
             }
         }
-        var container = document.getElementById('channelListContainer');
-        if (state.channels.length === 0) {
-            container.innerHTML = '<div class="empty-state">No text channels found.</div>';
-            return;
-        }
-        var html = '';
-        for (var k = 0; k < state.channels.length; k++) {
-            var c = state.channels[k];
-            html += '<div class="channel-item"><input type="checkbox" value="' + c.id + '"><span class="channel-name">' + c.guildName + ' / ' + c.name + '</span><span class="channel-id">' + c.id + '</span></div>';
-        }
-        container.innerHTML = html;
-        showToast('Loaded ' + state.channels.length + ' channels', 'info');
+        renderChannels();
+        showToast('Loaded ' + state.channels.length + ' text channels from ' + guilds.length + ' servers', 'success');
     } catch(e) {
-        showToast('Failed: ' + e.message, 'error');
+        showToast('Failed to load channels: ' + e.message, 'error');
     }
 }
 
-async function runSpammer() {
-    if (state.spamRunning) {
-        state.spamRunning = false;
-        document.getElementById('spamStatus').textContent = 'Stopped';
-        document.getElementById('spamStatus').className = 'count stopped';
-        document.getElementById('spamToggle').classList.remove('active');
-        showToast('Spammer stopped', 'info');
+function renderChannels() {
+    var container = $('channelList');
+    if (state.channels.length === 0) {
+        container.innerHTML = '<div class="empty-state">No text channels found.</div>';
         return;
     }
-    var msg = document.getElementById('spamMessage').value.trim();
-    if (!msg) { showToast('Enter a message', 'error'); return; }
-    var delay = parseInt(document.getElementById('spamDelay').value) || 1500;
-    var count = parseInt(document.getElementById('spamCount').value) || 1;
-    var checked = document.querySelectorAll('#channelListContainer input[type="checkbox"]:checked');
-    if (checked.length === 0) { showToast('Select channels', 'error'); return; }
-    state.spamRunning = true;
-    document.getElementById('spamStatus').textContent = 'Running';
-    document.getElementById('spamStatus').className = 'count running';
-    document.getElementById('spamToggle').classList.add('active');
-    var total = checked.length * count;
-    var done = 0;
-    for (var i = 0; i < checked.length; i++) {
-        if (!state.spamRunning) break;
-        var chId = checked[i].value;
-        for (var r = 0; r < count; r++) {
-            if (!state.spamRunning) break;
+    var html = '';
+    for (var i = 0; i < state.channels.length; i++) {
+        var c = state.channels[i];
+        html += '<div class="channel-item">' +
+            '<input type="checkbox" value="' + c.id + '" checked>' +
+            '<span class="name">#' + c.name + '</span>' +
+            '<span class="id">' + c.guild + '</span>' +
+            '<span class="id">' + c.id + '</span>' +
+            '</div>';
+    }
+    container.innerHTML = html;
+}
+
+function getSelectedChannels() {
+    var checkboxes = document.querySelectorAll('#channelList input[type="checkbox"]:checked');
+    var ids = [];
+    for (var i = 0; i < checkboxes.length; i++) {
+        ids.push(checkboxes[i].value);
+    }
+    return ids;
+}
+
+async function startSending() {
+    if (state.running) return;
+
+    var msg = $('messageInput').value.trim();
+    if (!msg) { showToast('Enter a message to send', 'error'); return; }
+
+    var channels = getSelectedChannels();
+    if (channels.length === 0) { showToast('Select at least one channel', 'error'); return; }
+
+    var count = parseInt($('sendCount').value) || 1;
+    var minDelay = (parseFloat($('minDelay').value) || 3) * 1000;
+    var maxDelay = (parseFloat($('maxDelay').value) || 8) * 1000;
+    var showTyping = $('typingToggle').checked;
+
+    if (minDelay >= maxDelay) { showToast('Max delay must be greater than min delay', 'error'); return; }
+
+    state.running = true;
+    state.stopped = false;
+
+    var total = channels.length * count;
+    var sent = 0;
+
+    $('startBtn').disabled = true;
+    $('stopBtn').disabled = false;
+    $('statusText2').textContent = 'Running';
+    $('statusText2').style.color = '#43b581';
+    $('totalCount').textContent = total;
+    $('sentCount').textContent = '0';
+    $('progressFill').style.width = '0%';
+
+    showToast('Started sending to ' + channels.length + ' channels', 'info');
+
+    for (var i = 0; i < count; i++) {
+        if (state.stopped) break;
+
+        for (var j = 0; j < channels.length; j++) {
+            if (state.stopped) break;
+            var chId = channels[j];
+
             try {
+                // Humanized: random delay before typing
+                var delay = rand(minDelay, maxDelay);
+                $('statusText2').textContent = 'Waiting ' + (delay/1000).toFixed(1) + 's...';
+                await sleep(delay);
+
+                // Show typing indicator
+                if (showTyping) {
+                    $('statusText2').textContent = 'Typing in channel...';
+                    await API.triggerTyping(state.token, chId);
+                    await sleep(rand(1500, 3500)); // Type for 1.5-3.5 seconds
+                }
+
+                // Send the message
+                $('statusText2').textContent = 'Sending...';
                 await API.sendMessage(state.token, chId, msg);
-                done++;
-                document.getElementById('spamProgress').style.width = Math.round((done/total)*100) + '%';
+                sent++;
+                $('sentCount').textContent = sent;
+                $('progressFill').style.width = Math.round((sent / total) * 100) + '%';
+
             } catch(e) {
-                showToast('Error sending', 'error');
+                showToast('Error on channel ' + chId + ': ' + e.message, 'error');
+                await sleep(2000);
             }
-            await new Promise(function(rs){ setTimeout(rs, delay); });
+        }
+
+        // Humanized: longer break between cycles
+        if (i < count - 1 && !state.stopped) {
+            var cycleBreak = rand(5000, 12000);
+            $('statusText2').textContent = 'Cycle ' + (i+1) + '/' + count + ' — break ' + (cycleBreak/1000).toFixed(0) + 's';
+            await sleep(cycleBreak);
         }
     }
-    state.spamRunning = false;
-    document.getElementById('spamStatus').textContent = 'Complete';
-    document.getElementById('spamStatus').className = 'count';
-    document.getElementById('spamToggle').classList.remove('active');
-    showToast('Spam complete!', 'success');
+
+    state.running = false;
+    $('startBtn').disabled = false;
+    $('stopBtn').disabled = true;
+
+    if (state.stopped) {
+        $('statusText2').textContent = 'Stopped';
+        $('statusText2').style.color = '#f04747';
+        showToast('Stopped — ' + sent + ' messages sent', 'info');
+    } else {
+        $('statusText2').textContent = 'Complete ✓';
+        $('statusText2').style.color = '#43b581';
+        $('progressFill').style.width = '100%';
+        showToast('Complete — ' + sent + ' messages sent', 'success');
+    }
 }
 
-async function checkTokens() {
-    var container = document.getElementById('tokenCheckResults');
-    container.innerHTML = '<div style="color:#888;">Checking...</div>';
-    var tokens = [];
-    for (var i = 0; i < state.alts.length; i++) {
-        if (state.alts[i].token) tokens.push({ email: state.alts[i].email, token: state.alts[i].token, idx: i });
-    }
-    if (tokens.length === 0) {
-        container.innerHTML = '<div class="empty-state">No tokens to check.</div>';
-        return;
-    }
-    var results = [];
-    for (var j = 0; j < tokens.length; j++) {
-        try {
-            var user = await API.getMe(tokens[j].token);
-            results.push('\u2705 ' + (tokens[j].email || user.username) + ' \u2014 ' + user.username + '#' + user.discriminator);
-            state.alts[tokens[j].idx].valid = true;
-        } catch(e) {
-            results.push('\u274C ' + (tokens[j].email || tokens[j].token.slice(0,20) + '...') + ' \u2014 Invalid');
-            state.alts[tokens[j].idx].valid = false;
-        }
-    }
-    saveAlts();
-    renderAltsList();
-    container.innerHTML = results.map(function(r){
-        return '<div style="padding:2px 0;">' + r + '</div>';
-    }).join('');
-    showToast('Checked ' + results.length + ' tokens', 'info');
+function stopSending() {
+    state.stopped = true;
+    state.running = false;
+    $('startBtn').disabled = false;
+    $('stopBtn').disabled = true;
+    showToast('Stopping...', 'warning');
 }
 
-async function joinAllServers() {
-    if (state.invites.length === 0) { showToast('No invites saved', 'error'); return; }
-    var tokens = [];
-    for (var i = 0; i < state.alts.length; i++) {
-        if (state.alts[i].token) tokens.push(state.alts[i].token);
-    }
-    if (tokens.length === 0) { showToast('No alt tokens', 'error'); return; }
-    var done = 0;
-    for (var j = 0; j < state.invites.length; j++) {
-        var code = state.invites[j].includes('/') ? state.invites[j].split('/').pop() : state.invites[j];
-        for (var k = 0; k < tokens.length; k++) {
-            try { await API.joinInvite(tokens[k], code); } catch(_) {}
-            done++;
-            await new Promise(function(rs){ setTimeout(rs, 1500); });
-        }
-    }
-    showToast('Processed ' + done + ' joins', 'success');
-}
-
-function exportData() {
-    var data = { alts: state.alts, invites: state.invites, dmCache: state.dmCache };
-    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'nova_backup.json';
-    a.click();
-    showToast('Data exported', 'success');
-}
-
+// ─── Event Listeners ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
-    initAltTabs();
-    
-    // Pre-fetch fingerprint on load
-    fetchFingerprint();
-
-    document.getElementById('loginBtn').addEventListener('click', function() {
-        var token = document.getElementById('tokenInput').value.trim() || document.getElementById('altSelect').value;
+    // Login
+    $('loginBtn').addEventListener('click', function() {
+        var token = $('tokenInput').value.trim();
         if (token) login(token);
     });
-
-    document.getElementById('logoutBtn').addEventListener('click', logout);
-
-    document.getElementById('createAltBtn').addEventListener('click', function() {
-        var email = document.getElementById('createEmail').value.trim();
-        var password = document.getElementById('createPassword').value.trim();
-        var username = document.getElementById('createUsername').value.trim();
-        var dob = document.getElementById('createDob').value.trim();
-        var apiKey = document.getElementById('createCaptchaKey').value.trim() || state.captchaKey;
-
-        if (!email || !password || !username || !dob) {
-            showToast('Fill all fields (email, password, username, birthday)', 'error');
-            return;
-        }
-
-        // Basic validation
-        if (password.length < 8) {
-            showToast('Password must be at least 8 characters', 'error');
-            return;
-        }
-
-        showToast('Starting registration process...', 'info');
-
-        (async function() {
-            if (apiKey) {
-                var result = await attemptRegistration(email, password, username, dob, apiKey);
-                if (result.success) {
-                    state.alts.push({
-                        email: email,
-                        password: password,
-                        username: username,
-                        dob: dob,
-                        token: result.token,
-                        valid: true,
-                        created: new Date().toISOString()
-                    });
-                    saveAlts();
-                    renderAltsList();
-                    renderAltSelect();
-                    showToast('Account created: ' + username, 'success');
-                } else if (result.needsManual) {
-                    showToast('Captcha required. Opening manual solver...', 'info');
-                    state.pendingRegistration = { email: email, password: password, username: username, dob: dob, apiKey: null };
-                    document.getElementById('captchaOverlay').classList.add('active');
-                    document.getElementById('captchaIframe').srcdoc = '<!DOCTYPE html><html><head><script src="https://hcaptcha.com/1/api.js" async defer></script><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100%;background:#0a0a10;}.h-captcha{transform:scale(0.88);transform-origin:center;}</style></head><body><div class="h-captcha" data-sitekey="4c672d35-0701-42b2-88c3-78380b0db560" data-theme="dark"></div></body></html>';
-                } else {
-                    showToast('Failed: ' + result.error, 'error');
-                }
-            } else {
-                // No API key - save data and open captcha popup
-                state.pendingRegistration = { email: email, password: password, username: username, dob: dob, apiKey: null };
-                document.getElementById('captchaOverlay').classList.add('active');
-                document.getElementById('captchaIframe').srcdoc = '<!DOCTYPE html><html><head><script src="https://hcaptcha.com/1/api.js" async defer></script><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100%;background:#0a0a10;}.h-captcha{transform:scale(0.88);transform-origin:center;}</style></head><body><div class="h-captcha" data-sitekey="4c672d35-0701-42b2-88c3-78380b0db560" data-theme="dark"></div></body></html>';
-                showToast('Solve the captcha in the popup, then click verify', 'info');
-            }
-        })();
+    $('tokenInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') $('loginBtn').click();
     });
 
-    document.getElementById('captchaCloseBtn').addEventListener('click', function() {
-        document.getElementById('captchaOverlay').classList.remove('active');
-        state.pendingRegistration = null;
+    // Load channels
+    $('loadChannelsBtn').addEventListener('click', loadChannels);
+
+    // Select / Deselect all
+    $('selectAllBtn').addEventListener('click', function() {
+        var cbs = document.querySelectorAll('#channelList input[type="checkbox"]');
+        for (var i = 0; i < cbs.length; i++) cbs[i].checked = true;
+    });
+    $('deselectAllBtn').addEventListener('click', function() {
+        var cbs = document.querySelectorAll('#channelList input[type="checkbox"]');
+        for (var i = 0; i < cbs.length; i++) cbs[i].checked = false;
     });
 
-    document.getElementById('captchaVerifyBtn').addEventListener('click', finishRegistration);
+    // Start / Stop
+    $('startBtn').addEventListener('click', startSending);
+    $('stopBtn').addEventListener('click', stopSending);
 
-    document.getElementById('importAltBtn').addEventListener('click', function() {
-        var email = document.getElementById('importEmail').value.trim();
-        var token = document.getElementById('importToken').value.trim();
-        if (!email || !token) { showToast('Email and token required', 'error'); return; }
-        state.alts.push({ email: email, password: '', username: '', dob: '', token: token, valid: true });
-        saveAlts();
-        renderAltsList();
-        renderAltSelect();
-        showToast('Alt imported', 'success');
-    });
+    // Logout
+    $('logoutBtn').addEventListener('click', logout);
 
-    document.getElementById('clearAltsBtn').addEventListener('click', function() {
-        if (confirm('Clear all alt accounts?')) {
-            state.alts = [];
-            saveAlts();
-            renderAltsList();
-            renderAltSelect();
-            showToast('All alts cleared', 'info');
-        }
-    });
-
-    document.getElementById('addInviteBtn').addEventListener('click', function() {
-        var inv = document.getElementById('inviteInput').value.trim();
-        if (!inv) { showToast('Enter invite code', 'error'); return; }
-        state.invites.push(inv);
-        saveInvites();
-        renderInvites();
-        document.getElementById('inviteInput').value = '';
-        showToast('Invite added', 'success');
-    });
-
-    document.getElementById('joinAllBtn').addEventListener('click', joinAllServers);
-
-    document.getElementById('dmToggle').addEventListener('click', function() {
-        state.dmReplyEnabled = !state.dmReplyEnabled;
-        document.getElementById('dmToggle').classList.toggle('active');
-        state.dmReplyMessage = document.getElementById('dmReplyMessage').value.trim() || state.dmReplyMessage;
-        if (state.dmReplyEnabled && state.token) {
-            startDmPolling();
-            showToast('DM auto-reply enabled', 'success');
-        } else {
-            if (state.dmPollInterval) {
-                clearInterval(state.dmPollInterval);
-                state.dmPollInterval = null;
-            }
-            showToast('DM auto-reply disabled', 'info');
-        }
-    });
-
-    document.getElementById('fetchDMsBtn').addEventListener('click', processDMs);
-    document.getElementById('fetchChannelsBtn').addEventListener('click', fetchChannels);
-    document.getElementById('spamToggle').addEventListener('click', runSpammer);
-    document.getElementById('checkTokensBtn').addEventListener('click', checkTokens);
-
-    document.getElementById('captchaKeyInput').value = state.captchaKey;
-    document.getElementById('captchaKeyInput').addEventListener('change', function(e) {
-        state.captchaKey = e.target.value;
-        localStorage.setItem('nova_captcha_key', state.captchaKey);
-    });
-
-    document.getElementById('exportDataBtn').addEventListener('click', exportData);
-
-    renderAltsList();
-    renderInvites();
-    renderAltSelect();
+    // Auto-login if token saved
+    var savedToken = localStorage.getItem('nova_token');
+    if (savedToken) {
+        $('tokenInput').value = savedToken;
+        login(savedToken);
+    }
 });
