@@ -12,7 +12,8 @@ var state = {
     spamRunning: false,
     channels: [],
     captchaKey: localStorage.getItem('nova_captcha_key') || '',
-    pendingRegistration: null
+    pendingRegistration: null,
+    fingerprint: localStorage.getItem('nova_fingerprint') || ''
 };
 
 function showToast(msg, type) {
@@ -23,13 +24,51 @@ function showToast(msg, type) {
     setTimeout(function(){ t.style.display = 'none'; }, 3500);
 }
 
+// Generate a unique fingerprint like Discord client does
+function generateFingerprint() {
+    var chars = 'abcdef0123456789';
+    var result = '';
+    for (var i = 0; i < 32; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+// Get or create a persistent fingerprint
+function getFingerprint() {
+    if (!state.fingerprint) {
+        state.fingerprint = generateFingerprint();
+        localStorage.setItem('nova_fingerprint', state.fingerprint);
+    }
+    return state.fingerprint;
+}
+
+// Try to fetch a real fingerprint from Discord's API
+async function fetchFingerprint() {
+    try {
+        var resp = await fetch('https://discord.com/api/v9/experiments', {
+            method: 'GET',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+        });
+        var data = await resp.json();
+        if (data && data.fingerprint) {
+            state.fingerprint = data.fingerprint;
+            localStorage.setItem('nova_fingerprint', state.fingerprint);
+            return data.fingerprint;
+        }
+    } catch(e) {}
+    return getFingerprint();
+}
+
 var API = {
     BASE: 'https://discord.com/api/v9',
     headers: function(t) {
         return {
-            'Authorization': t,
+            'Authorization': t || '',
             'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         };
     },
     request: async function(token, path, opts) {
@@ -37,7 +76,7 @@ var API = {
         opts.headers = Object.assign({}, this.headers(token), opts.headers || {});
         var resp = await fetch(this.BASE + path, opts);
         var data = resp.status === 204 ? null : await resp.json();
-        if (!resp.ok) throw new Error(data && data.message || 'HTTP ' + resp.status);
+        if (!resp.ok) throw new Error(data && data.message || JSON.stringify(data));
         return data;
     },
     getMe: function(t) { return API.request(t, '/users/@me'); },
@@ -48,7 +87,7 @@ var API = {
     sendMessage: function(t, c, content) {
         return API.request(t, '/channels/' + c + '/messages', {
             method: 'POST',
-            body: JSON.stringify({content: content})
+            body: JSON.stringify({content: content, nonce: Date.now().toString(), tts: false, flags: 0})
         });
     },
     resolveInvite: function(t, code) {
@@ -66,23 +105,49 @@ var API = {
     getChannelMessages: function(t, c, limit) {
         return API.request(t, '/channels/' + c + '/messages?limit=' + (limit || 1));
     },
-    registerAccount: function(email, password, username, dob, captchaKey) {
-        return fetch(this.BASE + '/auth/register', {
+    registerAccount: async function(email, password, username, dob, captchaKey, fingerprint) {
+        // First try with captcha_key in body
+        var body = {
+            email: email,
+            password: password,
+            username: username,
+            date_of_birth: dob,
+            consent: true,
+            gift_code_sku_id: null,
+            captcha_key: captchaKey,
+            fingerprint: fingerprint || getFingerprint(),
+            promotional_email_opt_in: false
+        };
+
+        var resp = await fetch(this.BASE + '/auth/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'User-Agent': 'Mozilla/5.0'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'X-Captcha-Key': captchaKey,
+                'X-Fingerprint': fingerprint || getFingerprint()
             },
-            body: JSON.stringify({
-                email: email,
-                password: password,
-                username: username,
-                date_of_birth: dob,
-                consent: true,
-                gift_code_sku_id: null,
-                captcha_key: captchaKey
-            })
-        }).then(function(r){ return r.json(); });
+            body: JSON.stringify(body)
+        });
+        var data = await resp.json();
+
+        // If still getting captcha error, try to get the sitekey and rqdata
+        if (data.captcha_key && data.captcha_key.length > 0) {
+            return {
+                error: true,
+                captchaError: data.captcha_key,
+                captcha_sitekey: data.captcha_sitekey,
+                captcha_rqdata: data.captcha_rqdata,
+                full: data
+            };
+        }
+
+        // If we got a token, success
+        if (data.token) {
+            return { token: data.token, user: data };
+        }
+
+        return data;
     }
 };
 
@@ -113,7 +178,10 @@ function renderAltsList() {
     var html = '';
     for (var i = 0; i < state.alts.length; i++) {
         var a = state.alts[i];
-        html += '<div class="alt-account-item"><div class="info"><span class="email">' + (a.email || 'No email') + '</span><span class="meta">' + (a.username || '?') + ' \u2022 ' + (a.token ? '\u2705 token' : '\u274C no token') + '</span></div><div class="actions"><span class="status-tag ' + (a.token ? 'ready' : 'pending') + '">' + (a.token ? 'Ready' : 'No Token') + '</span><span class="del" data-index="' + i + '" style="color:#e05555;cursor:pointer;">\u2715</span></div></div>';
+        var status = a.token ? (a.valid === false ? 'invalid' : 'ready') : 'pending';
+        var label = a.token ? (a.valid === false ? 'Invalid' : 'Ready') : 'No Token';
+        var cls = a.token ? (a.valid === false ? 'pending' : 'ready') : 'pending';
+        html += '<div class="alt-account-item"><div class="info"><span class="email">' + (a.email || 'No email') + '</span><span class="meta">' + (a.username || '?') + ' \u2022 ' + (a.token ? '\u2705 token' : '\u274C no token') + '</span></div><div class="actions"><span class="status-tag ' + cls + '">' + label + '</span><span class="del" data-index="' + i + '" style="color:#e05555;cursor:pointer;">\u2715</span></div></div>';
     }
     container.innerHTML = html;
     var dels = container.querySelectorAll('.del');
@@ -170,43 +238,94 @@ function initAltTabs() {
     }
 }
 
-async function solveCaptchaWith2Captcha(apiKey) {
-    var submitResp = await fetch('https://2captcha.com/in.php?key=' + apiKey + '&method=hcaptcha&sitekey=4c672d35-0701-42b2-9e87-5c4d3a1e3e0c&pageurl=' + encodeURIComponent('https://discord.com/register') + '&json=1');
+async function solveCaptchaWith2Captcha(apiKey, sitekey, rqdata) {
+    // Use the correct sitekey (fallback to default if not provided)
+    var sk = sitekey || '4c672d35-0701-42b2-88c3-78380b0db560';
+    var url = 'https://2captcha.com/in.php?key=' + apiKey + '&method=hcaptcha&sitekey=' + sk + '&pageurl=' + encodeURIComponent('https://discord.com/register') + '&json=1';
+    
+    // Add rqdata if provided (for enterprise)
+    if (rqdata) {
+        url += '&data=' + encodeURIComponent(rqdata);
+    }
+    
+    var submitResp = await fetch(url);
     var submitData = await submitResp.json();
-    if (submitData.status !== 1) throw new Error('2captcha submit failed: ' + JSON.stringify(submitData));
+    
+    if (submitData.status !== 1) {
+        throw new Error('2captcha submit failed: ' + JSON.stringify(submitData));
+    }
+    
     var taskId = submitData.request;
-    for (var i = 0; i < 60; i++) {
+    showToast('2Captcha task: ' + taskId + ' (waiting...)', 'info');
+    
+    for (var i = 0; i < 120; i++) { // Wait up to 10 minutes
         await new Promise(function(r){ setTimeout(r, 5000); });
         var resultResp = await fetch('https://2captcha.com/res.php?key=' + apiKey + '&action=get&id=' + taskId + '&json=1');
         var resultData = await resultResp.json();
-        if (resultData.status === 1) return resultData.request;
-        if (resultData.request && resultData.request !== 'CAPCHA_NOT_READY') throw new Error('2captcha: ' + resultData.request);
+        if (resultData.status === 1) {
+            showToast('Captcha solved!', 'success');
+            return resultData.request;
+        }
+        if (resultData.request && resultData.request !== 'CAPCHA_NOT_READY') {
+            throw new Error('2captcha: ' + resultData.request);
+        }
     }
-    throw new Error('Captcha solving timed out');
+    throw new Error('Captcha solving timed out after 10 minutes');
+}
+
+async function attemptRegistration(email, password, username, dob, apiKey) {
+    // Step 1: Get a fresh fingerprint
+    var fp = await fetchFingerprint();
+    showToast('Using fingerprint: ' + fp.slice(0, 8) + '...', 'info');
+    
+    // Step 2: Try 2Captcha first if key provided
+    if (apiKey) {
+        showToast('Solving captcha via 2Captcha...', 'info');
+        try {
+            var captchaToken = await solveCaptchaWith2Captcha(apiKey);
+            showToast('Attempting registration...', 'info');
+            var result = await API.registerAccount(email, password, username, dob, captchaToken, fp);
+            
+            if (result.token) {
+                return { success: true, token: result.token, user: result.user };
+            }
+            
+            // If captcha error with new sitekey, retry with correct sitekey
+            if (result.captchaError && result.captcha_sitekey) {
+                showToast('Retrying with correct sitekey...', 'info');
+                captchaToken = await solveCaptchaWith2Captcha(apiKey, result.captcha_sitekey, result.captcha_rqdata);
+                result = await API.registerAccount(email, password, username, dob, captchaToken, fp);
+                
+                if (result.token) {
+                    return { success: true, token: result.token, user: result.user };
+                }
+            }
+            
+            return { success: false, error: JSON.stringify(result) };
+        } catch(e) {
+            return { success: false, error: e.message };
+        }
+    } else {
+        // Manual captcha - just store data and return
+        return { success: false, needsManual: true };
+    }
 }
 
 async function finishRegistration() {
-    if (!state.pendingRegistration) { showToast('No pending registration', 'error'); return; }
-    var reg = state.pendingRegistration;
-    var captchaKey;
-    if (reg.apiKey) {
-        showToast('Solving captcha via 2Captcha...', 'info');
-        try {
-            captchaKey = await solveCaptchaWith2Captcha(reg.apiKey);
-            showToast('Captcha solved!', 'success');
-        } catch(e) {
-            showToast('2Captcha failed: ' + e.message, 'error');
-            document.getElementById('captchaOverlay').classList.remove('active');
-            state.pendingRegistration = null;
-            return;
-        }
-    } else {
-        captchaKey = prompt('Enter hCaptcha token (open console, type: hcaptcha.getResponse() and paste):');
-        if (!captchaKey) { showToast('Captcha token required', 'error'); return; }
+    if (!state.pendingRegistration) {
+        showToast('No pending registration', 'error');
+        return;
     }
+    
+    var reg = state.pendingRegistration;
+    var captchaKey = prompt('Enter hCaptcha token:\n(Open browser console on hCaptcha iframe, run: hcaptcha.getResponse() )');
+    if (!captchaKey) { showToast('Captcha token required', 'error'); return; }
+    
     try {
         showToast('Registering account...', 'info');
-        var result = await API.registerAccount(reg.email, reg.password, reg.username, reg.dob, captchaKey);
+        var fp = await fetchFingerprint();
+        var result = await API.registerAccount(reg.email, reg.password, reg.username, reg.dob, captchaKey, fp);
+        
         if (result.token) {
             state.alts.push({
                 email: reg.email,
@@ -214,6 +333,7 @@ async function finishRegistration() {
                 username: reg.username,
                 dob: reg.dob,
                 token: result.token,
+                valid: true,
                 created: new Date().toISOString()
             });
             saveAlts();
@@ -222,8 +342,6 @@ async function finishRegistration() {
             showToast('Account created: ' + reg.username, 'success');
             document.getElementById('captchaOverlay').classList.remove('active');
             state.pendingRegistration = null;
-        } else if (result.captcha_key) {
-            showToast('Captcha error: ' + result.captcha_key.join(', '), 'error');
         } else {
             showToast('Registration failed: ' + JSON.stringify(result), 'error');
         }
@@ -378,7 +496,7 @@ async function checkTokens() {
     container.innerHTML = '<div style="color:#888;">Checking...</div>';
     var tokens = [];
     for (var i = 0; i < state.alts.length; i++) {
-        if (state.alts[i].token) tokens.push({ email: state.alts[i].email, token: state.alts[i].token });
+        if (state.alts[i].token) tokens.push({ email: state.alts[i].email, token: state.alts[i].token, idx: i });
     }
     if (tokens.length === 0) {
         container.innerHTML = '<div class="empty-state">No tokens to check.</div>';
@@ -389,10 +507,14 @@ async function checkTokens() {
         try {
             var user = await API.getMe(tokens[j].token);
             results.push('\u2705 ' + (tokens[j].email || user.username) + ' \u2014 ' + user.username + '#' + user.discriminator);
+            state.alts[tokens[j].idx].valid = true;
         } catch(e) {
             results.push('\u274C ' + (tokens[j].email || tokens[j].token.slice(0,20) + '...') + ' \u2014 Invalid');
+            state.alts[tokens[j].idx].valid = false;
         }
     }
+    saveAlts();
+    renderAltsList();
     container.innerHTML = results.map(function(r){
         return '<div style="padding:2px 0;">' + r + '</div>';
     }).join('');
@@ -430,6 +552,9 @@ function exportData() {
 
 document.addEventListener('DOMContentLoaded', function() {
     initAltTabs();
+    
+    // Pre-fetch fingerprint on load
+    fetchFingerprint();
 
     document.getElementById('loginBtn').addEventListener('click', function() {
         var token = document.getElementById('tokenInput').value.trim() || document.getElementById('altSelect').value;
@@ -444,42 +569,53 @@ document.addEventListener('DOMContentLoaded', function() {
         var username = document.getElementById('createUsername').value.trim();
         var dob = document.getElementById('createDob').value.trim();
         var apiKey = document.getElementById('createCaptchaKey').value.trim() || state.captchaKey;
+
         if (!email || !password || !username || !dob) {
             showToast('Fill all fields (email, password, username, birthday)', 'error');
             return;
         }
-        if (apiKey) {
-            showToast('Solving with 2Captcha...', 'info');
-            (async function(){
-                try {
-                    var captchaKey = await solveCaptchaWith2Captcha(apiKey);
-                    showToast('Captcha solved! Creating account...', 'success');
-                    var result = await API.registerAccount(email, password, username, dob, captchaKey);
-                    if (result.token) {
-                        state.alts.push({
-                            email: email,
-                            password: password,
-                            username: username,
-                            dob: dob,
-                            token: result.token,
-                            created: new Date().toISOString()
-                        });
-                        saveAlts();
-                        renderAltsList();
-                        renderAltSelect();
-                        showToast('Account created: ' + username, 'success');
-                    } else {
-                        showToast('Registration failed: ' + JSON.stringify(result), 'error');
-                    }
-                } catch(e) {
-                    showToast('Error: ' + e.message, 'error');
-                }
-            })();
-        } else {
-            state.pendingRegistration = { email: email, password: password, username: username, dob: dob, apiKey: null };
-            document.getElementById('captchaOverlay').classList.add('active');
-            document.getElementById('captchaIframe').srcdoc = '<!DOCTYPE html><html><head><script src="https://hcaptcha.com/1/api.js" async defer></script><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100%;background:#0a0a10;}.h-captcha{transform:scale(0.88);transform-origin:center;}</style></head><body><div class="h-captcha" data-sitekey="4c672d35-0701-42b2-9e87-5c4d3a1e3e0c" data-theme="dark"></div></body></html>';
+
+        // Basic validation
+        if (password.length < 8) {
+            showToast('Password must be at least 8 characters', 'error');
+            return;
         }
+
+        showToast('Starting registration process...', 'info');
+
+        (async function() {
+            if (apiKey) {
+                var result = await attemptRegistration(email, password, username, dob, apiKey);
+                if (result.success) {
+                    state.alts.push({
+                        email: email,
+                        password: password,
+                        username: username,
+                        dob: dob,
+                        token: result.token,
+                        valid: true,
+                        created: new Date().toISOString()
+                    });
+                    saveAlts();
+                    renderAltsList();
+                    renderAltSelect();
+                    showToast('Account created: ' + username, 'success');
+                } else if (result.needsManual) {
+                    showToast('Captcha required. Opening manual solver...', 'info');
+                    state.pendingRegistration = { email: email, password: password, username: username, dob: dob, apiKey: null };
+                    document.getElementById('captchaOverlay').classList.add('active');
+                    document.getElementById('captchaIframe').srcdoc = '<!DOCTYPE html><html><head><script src="https://hcaptcha.com/1/api.js" async defer></script><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100%;background:#0a0a10;}.h-captcha{transform:scale(0.88);transform-origin:center;}</style></head><body><div class="h-captcha" data-sitekey="4c672d35-0701-42b2-88c3-78380b0db560" data-theme="dark"></div></body></html>';
+                } else {
+                    showToast('Failed: ' + result.error, 'error');
+                }
+            } else {
+                // No API key - save data and open captcha popup
+                state.pendingRegistration = { email: email, password: password, username: username, dob: dob, apiKey: null };
+                document.getElementById('captchaOverlay').classList.add('active');
+                document.getElementById('captchaIframe').srcdoc = '<!DOCTYPE html><html><head><script src="https://hcaptcha.com/1/api.js" async defer></script><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100%;background:#0a0a10;}.h-captcha{transform:scale(0.88);transform-origin:center;}</style></head><body><div class="h-captcha" data-sitekey="4c672d35-0701-42b2-88c3-78380b0db560" data-theme="dark"></div></body></html>';
+                showToast('Solve the captcha in the popup, then click verify', 'info');
+            }
+        })();
     });
 
     document.getElementById('captchaCloseBtn').addEventListener('click', function() {
@@ -493,7 +629,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var email = document.getElementById('importEmail').value.trim();
         var token = document.getElementById('importToken').value.trim();
         if (!email || !token) { showToast('Email and token required', 'error'); return; }
-        state.alts.push({ email: email, password: '', username: '', dob: '', token: token });
+        state.alts.push({ email: email, password: '', username: '', dob: '', token: token, valid: true });
         saveAlts();
         renderAltsList();
         renderAltSelect();
