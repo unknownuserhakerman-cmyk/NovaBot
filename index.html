@@ -3,249 +3,306 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NOVA SELFBOT</title>
+<title>NovaBot</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: #07070d;
-    color: #e0e0e0;
-    min-height: 100vh;
-    overflow-x: hidden;
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#06060e;
+  color:#d0d0d0;
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  min-height:100vh;
 }
-body::before {
-    content: '';
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: radial-gradient(ellipse at 15% 45%, #0d1b2a 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 15%, #1a0a2e 0%, transparent 55%),
-                radial-gradient(ellipse at 50% 85%, #0a1a1f 0%, transparent 55%);
-    pointer-events: none; z-index: 0;
+input,textarea,button{font-family:inherit}
+.hidden{display:none!important}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:#0a0a14}
+::-webkit-scrollbar-thumb{background:#2a2a40;border-radius:4px}
+
+/* ── Login ── */
+#loginScreen{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;width:100%;padding:20px;
 }
-#loginScreen {
-    display: flex; align-items: center; justify-content: center;
-    min-height: 100vh; position: relative; z-index: 1; padding: 20px;
+.login-box{
+  background:#0d0d18;border:1px solid #1c1c30;border-radius:16px;
+  padding:40px 36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.6);
 }
-.login-card {
-    background: linear-gradient(145deg, #12121a, #0d0d15);
-    border: 1px solid #1e1e30; border-radius: 20px;
-    padding: 44px 40px; width: 100%; max-width: 420px;
-    box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+.login-box .logo{
+  font-size:32px;font-weight:700;text-align:center;margin-bottom:6px;
+  background:linear-gradient(135deg,#7c5cbf,#5b7aff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
 }
-.login-card h1 {
-    font-size: 28px; font-weight: 800; text-align: center;
-    background: linear-gradient(135deg, #7c5cbf, #5b9aff);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    margin-bottom: 4px;
+.login-box .sub{text-align:center;font-size:12px;color:#555;margin-bottom:28px}
+.login-box .sub span{color:#7c5cbf;-webkit-text-fill-color:#7c5cbf}
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:12px;color:#888;margin-bottom:6px;font-weight:500}
+.form-group input,.form-group textarea{
+  width:100%;padding:11px 14px;background:#0f0f1e;border:1px solid #222238;
+  border-radius:8px;color:#e0e0e0;font-size:13px;outline:none;transition:border .2s;
 }
-.login-card .subtitle { text-align: center; color: #666; font-size: 13px; margin-bottom: 28px; }
-.input-group { margin-bottom: 16px; }
-.input-group label {
-    display: block; font-size: 11px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.8px; color: #888; margin-bottom: 5px;
+.form-group input:focus,.form-group textarea:focus{border-color:#5b7aff}
+.form-group textarea{resize:vertical;min-height:60px}
+.btn{
+  padding:10px 0;border:none;border-radius:8px;font-size:13px;
+  font-weight:600;cursor:pointer;transition:all .2s;width:100%;
 }
-.input-group input {
-    width: 100%; padding: 11px 15px; background: #0a0a10;
-    border: 1px solid #1e1e30; border-radius: 10px; color: #fff;
-    font-size: 14px; font-family: 'Inter', sans-serif; transition: border 0.2s;
+.btn-primary{background:linear-gradient(135deg,#7c5cbf,#5b7aff);color:#fff}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 18px rgba(91,122,255,.3)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+.btn-danger{background:#2a1515;border:1px solid #3a2020;color:#e05555}
+.btn-danger:hover{background:#3a2020}
+.btn-secondary{background:#1a1a2e;border:1px solid #2a2a40;color:#ccc}
+.btn-secondary:hover{background:#222238}
+.btn-sm{width:auto;padding:8px 16px;display:inline-block}
+
+/* ── Dashboard ── */
+#dashboard{width:100%;max-width:1200px;margin:0 auto;padding:20px}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;background:#0d0d18;border:1px solid #1c1c30;
+  border-radius:12px;margin-bottom:20px;
 }
-.input-group input:focus { outline: none; border-color: #5b7aff; box-shadow: 0 0 0 3px rgba(91,122,255,0.1); }
-.btn-primary {
-    width: 100%; padding: 12px;
-    background: linear-gradient(135deg, #7c5cbf, #5b7aff);
-    border: none; border-radius: 10px; color: #fff; font-size: 15px;
-    font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;
-    transition: all 0.3s; margin-top: 4px;
+.topbar .logo{font-size:22px;font-weight:700;background:linear-gradient(135deg,#7c5cbf,#5b7aff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.topbar-actions{display:flex;align-items:center;gap:12px}
+.status-area{display:flex;align-items:center;gap:10px;font-size:13px}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.status-dot.online{background:#43b581;box-shadow:0 0 8px rgba(67,181,129,.5)}
+.status-dot.offline{background:#555}
+.user-tag{color:#888;font-size:12px}
+.logout-top-btn{
+  background:transparent;border:1px solid #3a2020;color:#e05555;
+  padding:6px 14px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;
 }
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(91,122,255,0.3); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-#dashboard { display: none; position: relative; z-index: 1; }
-.topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 28px; background: rgba(10,10,18,0.85);
-    backdrop-filter: blur(14px); border-bottom: 1px solid #1a1a2e;
-    position: sticky; top: 0; z-index: 100;
+.logout-top-btn:hover{background:#2a1515}
+
+/* ── Layout: sidebar + main ── */
+.dashboard-body{display:flex;gap:16px}
+.sidebar{
+  width:300px;flex-shrink:0;
+  background:#0d0d18;border:1px solid #1c1c30;border-radius:14px;
+  padding:16px;max-height:calc(100vh - 140px);overflow-y:auto;
 }
-.topbar .logo {
-    font-size: 20px; font-weight: 800;
-    background: linear-gradient(135deg, #7c5cbf, #5b9aff);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+.sidebar h3{font-size:13px;color:#888;margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.server-list{display:flex;flex-direction:column;gap:2px}
+.server-item{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;
+  border-radius:8px;cursor:pointer;transition:all .15s;font-size:13px;border:1px solid transparent;
 }
-.topbar .status-area { display: flex; align-items: center; gap: 14px; }
-.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.status-dot.online { background: #43b581; box-shadow: 0 0 8px #43b581; }
-.status-dot.offline { background: #f04747; box-shadow: 0 0 8px #f04747; }
-.status-text { font-size: 13px; color: #888; }
-.topbar .user-tag {
-    font-size: 12px; color: #aaa; padding: 5px 12px;
-    background: #14141f; border-radius: 8px; border: 1px solid #1e1e30;
+.server-item:hover{background:#141428;border-color:#1c1c30}
+.server-item.active{background:#1a1a30;border-color:#5b7aff}
+.server-item .icon{
+  width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;flex-shrink:0;overflow:hidden;
 }
-.dashboard-grid { padding: 24px 28px; max-width: 800px; margin: 0 auto; }
-.card {
-    background: linear-gradient(145deg, #12121a, #0d0d15);
-    border: 1px solid #1a1a2e; border-radius: 16px; padding: 22px; margin-bottom: 20px;
+.server-item .sname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.server-item .scount{font-size:10px;color:#555;background:#0a0a14;padding:2px 6px;border-radius:4px}
+.channel-sublist{margin-left:24px;padding:2px 0 6px;display:none;flex-direction:column;gap:1px}
+.channel-sublist.open{display:flex}
+.channel-sub-item{
+  display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:5px;
+  font-size:11px;color:#888;cursor:pointer;transition:all .1s;
 }
-.card h3 {
-    font-size: 13px; font-weight: 600; text-transform: uppercase;
-    letter-spacing: 0.5px; color: #888; margin-bottom: 14px;
+.channel-sub-item:hover{background:#141428;color:#ccc}
+.channel-sub-item .hash{color:#555;font-size:10px}
+
+.main-content{flex:1;display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{
+  background:#0d0d18;border:1px solid #1c1c30;border-radius:14px;padding:22px 24px;
 }
-.form-group { margin-bottom: 12px; }
-.form-group label {
-    display: block; font-size: 11px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.5px; color: #666; margin-bottom: 4px;
+.card h3{font-size:15px;font-weight:600;margin-bottom:16px;color:#e8e8e8}
+.form-row{display:flex;gap:12px;margin-bottom:14px}
+.form-row .form-group{flex:1;margin-bottom:0}
+.form-row .form-group input{width:100%}
+
+/* invite list */
+.invite-list{max-height:140px;overflow-y:auto;margin-bottom:12px}
+.invite-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:7px 10px;background:#0a0a14;border:1px solid #181828;
+  border-radius:6px;margin-bottom:4px;font-size:12px;
 }
-textarea {
-    width: 100%; height: 100px; padding: 11px 13px;
-    background: #0a0a10; border: 1px solid #1e1e30; border-radius: 10px;
-    color: #e0e0e0; font-size: 13px; font-family: 'Inter', monospace;
-    resize: vertical;
+.invite-item .code{color:#5b7aff;font-family:monospace;word-break:break-all;font-size:11px}
+.invite-item .del{cursor:pointer;color:#e05555;font-size:13px;padding:0 4px;user-select:none}
+.invite-item .del:hover{color:#ff6b6b}
+
+/* msg list */
+.msg-list{max-height:150px;overflow-y:auto;margin-bottom:12px}
+.msg-item{
+  display:flex;align-items:center;gap:8px;padding:7px 10px;background:#0a0a14;
+  border:1px solid #181828;border-radius:6px;margin-bottom:4px;font-size:12px;
 }
-textarea:focus { outline: none; border-color: #5b7aff; }
-input[type="text"], input[type="number"] {
-    width: 100%; padding: 10px 14px; background: #0a0a10;
-    border: 1px solid #1e1e30; border-radius: 8px; color: #e0e0e0;
-    font-size: 13px; font-family: 'Inter', sans-serif;
+.msg-item .del{cursor:pointer;color:#e05555;font-size:13px;margin-left:auto;user-select:none}
+
+.channel-grid{max-height:160px;overflow-y:auto;margin-bottom:10px}
+.channel-grid-item{
+  display:flex;align-items:center;gap:8px;padding:6px 8px;background:#0a0a14;
+  border:1px solid #181828;border-radius:5px;margin-bottom:3px;font-size:11px;cursor:pointer;
 }
-input:focus { outline: none; border-color: #5b7aff; }
-.form-row { display: flex; gap: 12px; margin-bottom: 12px; }
-.form-row .form-group { flex: 1; }
-.channel-list {
-    max-height: 250px; overflow-y: auto; background: #0a0a10;
-    border-radius: 10px; border: 1px solid #1a1a2e; padding: 6px; margin-bottom: 12px;
+.channel-grid-item input[type="checkbox"]{accent-color:#7c5cbf;width:12px;height:12px}
+.channel-grid-item .cname{font-weight:500;color:#ddd}
+.channel-grid-item .cguild{color:#555;font-size:10px;margin-left:auto}
+
+.status-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 12px;background:#0a0a10;border-radius:8px;
+  border:1px solid #1a1a2e;font-size:11px;margin-bottom:6px;
 }
-.channel-list::-webkit-scrollbar { width: 4px; }
-.channel-list::-webkit-scrollbar-track { background: transparent; }
-.channel-list::-webkit-scrollbar-thumb { background: #2a2a40; border-radius: 4px; }
-.channel-item {
-    display: flex; align-items: center; gap: 8px;
-    padding: 7px 9px; border-radius: 6px; font-size: 12px; transition: background 0.2s;
+.progress-bar{width:100%;height:3px;background:#1a1a2e;border-radius:2px;overflow:hidden;margin-top:4px}
+.progress-bar .fill{height:100%;background:linear-gradient(90deg,#7c5cbf,#5b7aff);width:0%;transition:width .3s}
+
+.dm-config{display:flex;gap:12px;align-items:flex-end;margin-bottom:10px}
+.dm-config .form-group{flex:1;margin-bottom:0}
+.dm-config .btn{width:auto;padding:10px 18px;flex-shrink:0}
+
+/* status indicators */
+.evasion-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;
 }
-.channel-item:hover { background: #14141f; }
-.channel-item input[type="checkbox"] { accent-color: #7c5cbf; width: 14px; height: 14px; }
-.channel-item .name { color: #ccc; font-weight: 500; }
-.channel-item .id { color: #555; font-size: 10px; margin-left: auto; font-family: monospace; }
-.btn {
-    padding: 9px 20px; border: none; border-radius: 8px;
-    font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif;
-    cursor: pointer; transition: all 0.2s;
+.evasion-badge.active{background:#0d2a1a;color:#43b581;border:1px solid #1a4a2a}
+.evasion-badge.inactive{background:#2a1515;color:#e05555;border:1px solid #3a2020}
+
+.toast{
+  position:fixed;bottom:24px;right:24px;
+  background:#12121a;border:1px solid #1e1e30;border-radius:12px;
+  padding:13px 18px;font-size:13px;color:#e0e0e0;
+  box-shadow:0 10px 40px rgba(0,0,0,.5);z-index:9999;
+  display:none;animation:slideIn .3s ease;
 }
-.btn-primary2 { background: linear-gradient(135deg, #7c5cbf, #5b7aff); color: #fff; }
-.btn-primary2:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(91,122,255,0.3); }
-.btn-primary2:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
-.btn-danger { background: #2a1515; border: 1px solid #3a2020; color: #e05555; }
-.btn-danger:hover { background: #3a2020; }
-.btn-secondary { background: #1a1a2e; border: 1px solid #2a2a40; color: #ccc; }
-.btn-secondary:hover { background: #222238; }
-.status-bar {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 14px; background: #0a0a10; border-radius: 10px;
-    border: 1px solid #1a1a2e; font-size: 12px; margin-bottom: 10px;
+@keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.toast.success{border-left:3px solid #43b581}
+.toast.error{border-left:3px solid #f04747}
+.toast.info{border-left:3px solid #5b7aff}
+
+.empty-state{color:#444;font-size:12px;padding:12px;text-align:center}
+.footer-note{text-align:center;margin-top:16px;font-size:10px;color:#333;padding-bottom:10px}
+
+/* responsive */
+@media(max-width:900px){
+  .dashboard-body{flex-direction:column}
+  .sidebar{width:100%;max-height:300px}
 }
-.progress-bar { width: 100%; height: 4px; background: #1a1a2e; border-radius: 2px; overflow: hidden; margin-top: 6px; }
-.progress-bar .fill { height: 100%; background: linear-gradient(90deg, #7c5cbf, #5b7aff); width: 0%; transition: width 0.3s; }
-.btn-group { display: flex; gap: 8px; }
-.btn-group .btn { flex: 1; }
-.toast {
-    position: fixed; bottom: 24px; right: 24px;
-    background: #12121a; border: 1px solid #1e1e30; border-radius: 12px;
-    padding: 13px 18px; font-size: 13px; color: #e0e0e0;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 9999;
-    display: none; animation: slideIn 0.3s ease;
-}
-@keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-.toast.success { border-left: 3px solid #43b581; }
-.toast.error { border-left: 3px solid #f04747; }
-.toast.info { border-left: 3px solid #5b7aff; }
-.empty-state { color: #444; font-size: 12px; padding: 16px; text-align: center; }
-.logout-row { display: flex; justify-content: flex-end; padding: 0 28px 24px; max-width: 800px; margin: 0 auto; }
-.checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.checkbox-row input[type="checkbox"] { accent-color: #7c5cbf; width: 14px; height: 14px; }
-.checkbox-row label { font-size: 12px; color: #aaa; cursor: pointer; }
 </style>
 </head>
 <body>
 
-<div id="toast" class="toast"></div>
+<div class="toast" id="toast"></div>
 
+<!-- ─── LOGIN ─── -->
 <div id="loginScreen">
-    <div class="login-card">
-        <h1>✦ NOVA</h1>
-        <p class="subtitle">Channel Message Sender</p>
-        <div class="input-group">
-            <label>Discord Token</label>
-            <input type="password" id="tokenInput" placeholder="Enter your user token...">
-        </div>
-        <button class="btn-primary" id="loginBtn">Initialize</button>
-        <p style="text-align:center; margin-top:14px; font-size:11px; color:#444;">Token stored locally. Never sent anywhere.</p>
-        <p style="text-align:center; margin-top:4px; font-size:10px; color:#333;">⚠ Selfbots violate Discord ToS. Use at own risk.</p>
+  <div class="login-box">
+    <div class="logo">✦ NOVA</div>
+    <div class="sub">selfbot · <span>v2</span></div>
+    <div class="form-group">
+      <label>Discord Token</label>
+      <input type="password" id="tokenInput" placeholder="Enter your token..." autocomplete="off">
     </div>
+    <button class="btn btn-primary" id="loginBtn">Authenticate</button>
+    <p style="text-align:center;margin-top:14px;font-size:10px;color:#333;">⚠ Selfbots violate Discord ToS. Use at own risk.</p>
+  </div>
 </div>
 
-<div id="dashboard">
-    <div class="topbar">
-        <div class="logo">✦ NOVA</div>
-        <div class="status-area">
-            <span class="status-dot offline" id="statusDot"></span>
-            <span class="status-text" id="statusText">Disconnected</span>
-            <span class="user-tag" id="userTag">—</span>
+<!-- ─── DASHBOARD ─── -->
+<div id="dashboard" class="hidden">
+  <div class="topbar">
+    <div class="logo">✦ NOVA</div>
+    <div class="topbar-actions">
+      <span class="evasion-badge active" id="evasionBadge">🛡 Anti-Detect Active</span>
+      <div class="status-area">
+        <span class="status-dot offline" id="statusDot"></span>
+        <span class="status-text" id="statusText">Disconnected</span>
+        <span class="user-tag" id="userTag">—</span>
+      </div>
+      <button class="logout-top-btn" id="logoutBtn">✕ Logout</button>
+    </div>
+  </div>
+
+  <div class="dashboard-body">
+
+    <!-- ─── SIDEBAR: Servers & Channels ─── -->
+    <div class="sidebar" id="sidebar">
+      <h3>Servers</h3>
+      <div id="serverList" class="server-list">
+        <div class="empty-state">Log in to view servers.</div>
+      </div>
+    </div>
+
+    <!-- ─── MAIN ─── -->
+    <div class="main-content">
+
+      <!-- Invites -->
+      <div class="card">
+        <h3>📌 Servers to Auto-Join</h3>
+        <p style="font-size:11px;color:#555;margin-bottom:10px;">Add invite links — Nova joins them automatically after login.</p>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Invite Link</label>
+          <input type="text" id="inviteInput" placeholder="discord.gg/code or discord.com/invite/code">
         </div>
-    </div>
-
-    <div class="dashboard-grid">
-        <div class="card">
-            <h3>📢 Channel Sender</h3>
-            
-            <div class="form-group">
-                <label>Message to Send</label>
-                <textarea id="messageInput" placeholder="Enter the message you want to send..."></textarea>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Send Count (per channel)</label>
-                    <input type="number" id="sendCount" value="3" min="1" max="100">
-                </div>
-                <div class="form-group">
-                    <label>Min Delay (seconds)</label>
-                    <input type="number" id="minDelay" value="3" min="1" step="0.5">
-                </div>
-                <div class="form-group">
-                    <label>Max Delay (seconds)</label>
-                    <input type="number" id="maxDelay" value="8" min="2" step="0.5">
-                </div>
-            </div>
-
-            <div class="checkbox-row">
-                <input type="checkbox" id="typingToggle" checked>
-                <label for="typingToggle">Show typing indicator before each message</label>
-            </div>
-
-            <div class="btn-group" style="margin-bottom:12px;">
-                <button class="btn btn-secondary" id="loadChannelsBtn">🔄 Load Channels</button>
-                <button class="btn btn-secondary" id="selectAllBtn">✓ Select All</button>
-                <button class="btn btn-secondary" id="deselectAllBtn">✕ Deselect All</button>
-            </div>
-
-            <div class="channel-list" id="channelList">
-                <div class="empty-state">Click "Load Channels" after logging in.</div>
-            </div>
-
-            <div class="status-bar">
-                <span>Status: <strong id="statusText2">Idle</strong></span>
-                <span>Sent: <span id="sentCount">0</span> / <span id="totalCount">0</span></span>
-            </div>
-            <div class="progress-bar"><div class="fill" id="progressFill"></div></div>
-
-            <div class="btn-group" style="margin-top:10px;">
-                <button class="btn btn-primary2" id="startBtn">▶ Start Sending</button>
-                <button class="btn btn-danger" id="stopBtn" disabled>⏹ Stop</button>
-            </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button class="btn btn-secondary btn-sm" id="addInviteBtn">+ Add Invite</button>
+          <button class="btn btn-primary btn-sm" id="joinServersBtn">▶ Join All Now</button>
         </div>
-    </div>
+        <div class="invite-list" id="inviteList"><div class="empty-state">No invites added.</div></div>
+      </div>
 
-    <div class="logout-row">
-        <button class="btn btn-danger" id="logoutBtn">Logout</button>
+      <!-- Auto Message Sender -->
+      <div class="card">
+        <h3>📢 Auto-Message Sender</h3>
+        <div class="form-group">
+          <label>Message</label>
+          <textarea id="autoMsgInput" placeholder="Enter a message..." rows="2"></textarea>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="addMsgBtn" style="margin-bottom:10px">+ Add to Queue</button>
+        <div class="msg-list" id="msgList"><div class="empty-state">No messages in queue.</div></div>
+
+        <div class="form-row">
+          <div class="form-group"><label>Send Count</label><input type="number" id="sendCount" value="3" min="1" max="200"></div>
+          <div class="form-group"><label>Min Delay (sec)</label><input type="number" id="minDelay" value="5" min="2" step="0.5"></div>
+          <div class="form-group"><label>Max Delay (sec)</label><input type="number" id="maxDelay" value="12" min="4" step="0.5"></div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" id="selectAllBtn">✓ Select All</button>
+          <button class="btn btn-secondary btn-sm" id="deselectAllBtn">✕ Deselect All</button>
+          <span style="font-size:10px;color:#555;align-self:center;margin-left:auto">
+            <span style="color:#5b7aff">◆</span> Trade channels only (auto-filter)
+          </span>
+        </div>
+
+        <div class="channel-grid" id="channelList"><div class="empty-state">No trade channels loaded. Click a server in the sidebar.</div></div>
+
+        <div class="status-bar">
+          <span>Status: <strong id="statusText2">Idle</strong></span>
+          <span>Sent: <span id="sentCount">0</span> / <span id="totalCount">0</span></span>
+        </div>
+        <div class="progress-bar"><div class="fill" id="progressFill"></div></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-primary" id="startBtn" style="flex:1">▶ Start Sending</button>
+          <button class="btn btn-danger" id="stopBtn" style="flex:1" disabled>⏹ Stop</button>
+        </div>
+      </div>
+
+      <!-- Auto DM Reply -->
+      <div class="card">
+        <h3>💬 Auto DM Reply & Friend Accepter</h3>
+        <p style="font-size:11px;color:#555;margin-bottom:10px;">
+          Auto-accepts all friend requests + replies to DMs with your message. Includes 5-15s humanized delays.
+        </p>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Auto-Reply Message</label>
+          <textarea id="dmReplyInput" placeholder="Enter auto-reply message..." rows="2"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+          <button class="btn btn-secondary btn-sm" id="saveDmReplyBtn">💾 Save</button>
+          <span id="dmReplyStatus" style="font-size:11px;color:#555;">Not set</span>
+        </div>
+      </div>
+
     </div>
+  </div>
+
+  <div class="footer-note">⚠ Selfbots violate Discord ToS. Use at own risk. Anti-detection measures active.</div>
 </div>
 
 <script src="script.js"></script>
