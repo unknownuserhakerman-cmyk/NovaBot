@@ -97,14 +97,6 @@ input,textarea,button{font-family:inherit}
 }
 .server-item .sname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
 .server-item .scount{font-size:10px;color:#555;background:#0a0a14;padding:2px 6px;border-radius:4px}
-.channel-sublist{margin-left:24px;padding:2px 0 6px;display:none;flex-direction:column;gap:1px}
-.channel-sublist.open{display:flex}
-.channel-sub-item{
-  display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:5px;
-  font-size:11px;color:#888;cursor:pointer;transition:all .1s;
-}
-.channel-sub-item:hover{background:#141428;color:#ccc}
-.channel-sub-item .hash{color:#555;font-size:10px}
 
 .main-content{flex:1;display:flex;flex-direction:column;gap:16px;min-width:0}
 .card{
@@ -151,17 +143,11 @@ input,textarea,button{font-family:inherit}
 .progress-bar{width:100%;height:3px;background:#1a1a2e;border-radius:2px;overflow:hidden;margin-top:4px}
 .progress-bar .fill{height:100%;background:linear-gradient(90deg,#7c5cbf,#5b7aff);width:0%;transition:width .3s}
 
-.dm-config{display:flex;gap:12px;align-items:flex-end;margin-bottom:10px}
-.dm-config .form-group{flex:1;margin-bottom:0}
-.dm-config .btn{width:auto;padding:10px 18px;flex-shrink:0}
-
-/* status indicators */
 .evasion-badge{
   display:inline-flex;align-items:center;gap:5px;
   padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;
 }
 .evasion-badge.active{background:#0d2a1a;color:#43b581;border:1px solid #1a4a2a}
-.evasion-badge.inactive{background:#2a1515;color:#e05555;border:1px solid #3a2020}
 
 .toast{
   position:fixed;bottom:24px;right:24px;
@@ -178,7 +164,6 @@ input,textarea,button{font-family:inherit}
 .empty-state{color:#444;font-size:12px;padding:12px;text-align:center}
 .footer-note{text-align:center;margin-top:16px;font-size:10px;color:#333;padding-bottom:10px}
 
-/* responsive */
 @media(max-width:900px){
   .dashboard-body{flex-direction:column}
   .sidebar{width:100%;max-height:300px}
@@ -189,7 +174,7 @@ input,textarea,button{font-family:inherit}
 
 <div class="toast" id="toast"></div>
 
-<!-- ─── LOGIN ─── -->
+<!-- ─── LOGIN SCREEN ─── -->
 <div id="loginScreen">
   <div class="login-box">
     <div class="logo">✦ NOVA</div>
@@ -197,6 +182,9 @@ input,textarea,button{font-family:inherit}
     <div class="form-group">
       <label>Discord Token</label>
       <input type="password" id="tokenInput" placeholder="Enter your token..." autocomplete="off">
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label style="font-size:10px;color:#666;">No alt manager, no token manager, no API key, no captcha — token only.</label>
     </div>
     <button class="btn btn-primary" id="loginBtn">Authenticate</button>
     <p style="text-align:center;margin-top:14px;font-size:10px;color:#333;">⚠ Selfbots violate Discord ToS. Use at own risk.</p>
@@ -220,7 +208,7 @@ input,textarea,button{font-family:inherit}
 
   <div class="dashboard-body">
 
-    <!-- ─── SIDEBAR: Servers & Channels ─── -->
+    <!-- ─── SIDEBAR: Servers ─── -->
     <div class="sidebar" id="sidebar">
       <h3>Servers</h3>
       <div id="serverList" class="server-list">
@@ -231,10 +219,10 @@ input,textarea,button{font-family:inherit}
     <!-- ─── MAIN ─── -->
     <div class="main-content">
 
-      <!-- Invites -->
+      <!-- Auto-Join Invites -->
       <div class="card">
         <h3>📌 Servers to Auto-Join</h3>
-        <p style="font-size:11px;color:#555;margin-bottom:10px;">Add invite links — Nova joins them automatically after login.</p>
+        <p style="font-size:11px;color:#555;margin-bottom:10px;">Joins automatically after login. Add invite links below.</p>
         <div class="form-group" style="margin-bottom:10px">
           <label>Invite Link</label>
           <input type="text" id="inviteInput" placeholder="discord.gg/code or discord.com/invite/code">
@@ -266,7 +254,7 @@ input,textarea,button{font-family:inherit}
           <button class="btn btn-secondary btn-sm" id="selectAllBtn">✓ Select All</button>
           <button class="btn btn-secondary btn-sm" id="deselectAllBtn">✕ Deselect All</button>
           <span style="font-size:10px;color:#555;align-self:center;margin-left:auto">
-            <span style="color:#5b7aff">◆</span> Trade channels only (auto-filter)
+            <span style="color:#5b7aff">◆</span> Trade channels only
           </span>
         </div>
 
@@ -283,11 +271,11 @@ input,textarea,button{font-family:inherit}
         </div>
       </div>
 
-      <!-- Auto DM Reply -->
+      <!-- Auto DM Reply & Friend Accepter -->
       <div class="card">
         <h3>💬 Auto DM Reply & Friend Accepter</h3>
         <p style="font-size:11px;color:#555;margin-bottom:10px;">
-          Auto-accepts all friend requests + replies to DMs with your message. Includes 5-15s humanized delays.
+          Auto-accepts all friend requests + replies to DMs with your custom message.
         </p>
         <div class="form-group" style="margin-bottom:0">
           <label>Auto-Reply Message</label>
