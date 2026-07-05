@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-//  NOVABOT v2 — Full Selfbot with Anti-Detection
+//  NOVABOT v2 — Token-Only Selfbot · No Alt Manager · No API Key · No Captcha
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -21,7 +21,6 @@ function showToast(msg,type='info'){
 
 // ─── Anti-Detection Engine ──────────────────────────────────────────────
 const Evasion = {
-  // Realistic browser User-Agent (rotated)
   userAgents: [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -29,11 +28,7 @@ const Evasion = {
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
   ],
   currentUA: null,
-
-  init(){
-    this.currentUA = this.userAgents[rand(0,this.userAgents.length-1)];
-  },
-
+  init(){ this.currentUA = this.userAgents[rand(0,this.userAgents.length-1)]; },
   headers(token){
     return {
       'Authorization': token,
@@ -48,14 +43,10 @@ const Evasion = {
       'Sec-Fetch-Site': 'same-origin',
     };
   },
-
-  // Human-like typing simulation
   async humanTyping(token, cid){
-    // Realistic typing duration: 1.5-4 seconds
     const duration = rand(1500, 4000);
     try {
       await API.req(token, '/channels/'+cid+'/typing', { method: 'POST', headers: this.headers(token) });
-      // Break up the typing into small chunks like a real human
       const chunks = rand(2, 5);
       const chunkTime = Math.floor(duration / chunks);
       for(let i=0; i<chunks; i++){
@@ -63,19 +54,10 @@ const Evasion = {
       }
     } catch(_){}
   },
-
-  // Random delay between actions (anti-rate-limit + anti-pattern)
-  async humanDelay(token, cid){
-    // Random delay between 3-12 seconds (human reaction time)
-    const base = rand(3000, 8000);
-    // Add jitter
-    const jitter = rand(0, 4000);
-    await sleep(base + jitter);
+  async humanDelay(){
+    await sleep(rand(3000, 8000) + rand(0, 4000));
   },
-
-  // Random breaks every few cycles (looks natural)
   async maybeTakeBreak(){
-    // 8% chance to take a 30-90 second break
     if(rand(1,100) <= 8){
       const breakLen = rand(30000, 90000);
       document.getElementById('statusText2').textContent = 'Break '+(breakLen/1000).toFixed(0)+'s (anti-detect)';
@@ -90,8 +72,8 @@ const Evasion = {
 const state = {
   token: null,
   user: null,
-  channels: [],       // all text channels
-  filteredChannels: [], // channels matching "trade"/"trading"
+  channels: [],
+  filteredChannels: [],
   guilds: [],
   selectedGuildId: null,
   running: false,
@@ -105,44 +87,29 @@ const state = {
   dmListenerInterval: null,
   friendAccepterInterval: null,
   knownDMChannels: new Set(),
-  requestCount: 0,
-  lastRequestTime: Date.now(),
 };
 
 // ─── API ──────────────────────────────────────────────────────────────────
 const API = {
   base: 'https://discord.com/api/v9',
-
   async req(token, path, opts={}){
-    state.requestCount++;
-    state.lastRequestTime = Date.now();
-
     const headers = Evasion.headers(token);
     if(opts.headers) Object.assign(headers, opts.headers);
-
     const r = await fetch(this.base+path, {...opts, headers});
-
-    // Handle 429 rate limit with Retry-After
     if(r.status === 429){
       let retryAfter = 5000;
-      try {
-        const body = await r.json();
-        retryAfter = (body.retry_after || 5) * 1000 + rand(1000, 3000);
-      } catch(_){ retryAfter = 5000 + rand(1000, 3000); }
+      try { const body = await r.json(); retryAfter = (body.retry_after || 5) * 1000 + rand(1000, 3000); } catch(_){}
       showToast('Rate limited — waiting '+(retryAfter/1000).toFixed(0)+'s','info');
       await sleep(retryAfter);
-      // Retry once
       const r2 = await fetch(this.base+path, {...opts, headers});
       if(!r2.ok){ let e; try{e=(await r2.json()).message}catch(_){e='HTTP '+r2.status}; throw new Error(e); }
       if(r2.status===204) return null;
       return r2.json();
     }
-
     if(!r.ok){ let e; try{e=(await r.json()).message}catch(_){e='HTTP '+r.status}; throw new Error(e); }
     if(r.status===204) return null;
     return r.json();
   },
-
   getMe:            (t) => API.req(t, '/users/@me'),
   getGuilds:        (t) => API.req(t, '/users/@me/guilds'),
   getGuildChannels: (t,g) => API.req(t, '/guilds/'+g+'/channels'),
@@ -167,7 +134,6 @@ async function login(token){
     document.getElementById('statusDot').className = 'status-dot online';
     document.getElementById('statusText').textContent = 'Connected';
     document.getElementById('userTag').textContent = state.user.username+'#'+state.user.discriminator;
-    // Restore UI
     document.getElementById('sendCount').value = state.sendCount;
     document.getElementById('minDelay').value = state.minDelay;
     document.getElementById('maxDelay').value = state.maxDelay;
@@ -175,14 +141,11 @@ async function login(token){
     document.getElementById('dmReplyStatus').textContent = state.dmReply ? 'Active: "'+state.dmReply.substring(0,30)+'..."' : 'Not set';
     renderInvites();
     renderAutoMessages();
-    // Load guilds + channels
     await loadGuildsAndChannels();
-    // Auto-join servers
     if(state.invites.length > 0){
       showToast('Auto-joining '+state.invites.length+' servers...', 'info');
       await joinAllServers();
     }
-    // Start listeners
     startDMListener();
     startFriendAccepter();
   } catch(e){
@@ -208,24 +171,21 @@ function logout(){
   showToast('Logged out', 'info');
 }
 
-// ─── Server & Channel Browser (with Trade filter) ────────────────────────
+// ─── Server & Channel Browser ────────────────────────────────────────────
 async function loadGuildsAndChannels(){
   try {
     document.getElementById('serverList').innerHTML = '<div class="empty-state" style="color:#888;">Loading servers...</div>';
     state.guilds = await API.getGuilds(state.token);
     state.channels = [];
     state.filteredChannels = [];
-
-    // Load channels for ALL guilds
     for(let i=0; i<state.guilds.length; i++){
       const g = state.guilds[i];
       try {
         const chs = await API.getGuildChannels(state.token, g.id);
         for(let j=0; j<chs.length; j++){
-          if(chs[j].type === 0){ // text channel
+          if(chs[j].type === 0){
             const ch = { id: chs[j].id, name: chs[j].name, guildId: g.id, guildName: g.name };
             state.channels.push(ch);
-            // Auto-filter: channels matching "trade" or "trading"
             const lower = chs[j].name.toLowerCase();
             if(lower.includes('trade') || lower.includes('trading')){
               state.filteredChannels.push(ch);
@@ -233,10 +193,8 @@ async function loadGuildsAndChannels(){
           }
         }
       } catch(_){}
-      // Humanized delay between guild requests to avoid rate limits
       if(i < state.guilds.length-1) await sleep(rand(800, 1500));
     }
-
     renderServerList();
     renderFilteredChannels();
     showToast('Loaded '+state.guilds.length+' servers, '+state.filteredChannels.length+' trade channels','success');
@@ -247,16 +205,11 @@ async function loadGuildsAndChannels(){
 
 function renderServerList(){
   const container = document.getElementById('serverList');
-  if(state.guilds.length === 0){
-    container.innerHTML = '<div class="empty-state">No servers found.</div>';
-    return;
-  }
+  if(state.guilds.length === 0){ container.innerHTML = '<div class="empty-state">No servers found.</div>'; return; }
   container.innerHTML = state.guilds.map(g => {
     const active = g.id === state.selectedGuildId ? 'active' : '';
-    // Count trade channels in this guild
     const tradeCount = state.channels.filter(c => c.guildId === g.id && (c.name.toLowerCase().includes('trade') || c.name.toLowerCase().includes('trading'))).length;
     const initial = (g.name || '?')[0].toUpperCase();
-    // Color hash from guild id
     const hue = parseInt(g.id.slice(-6), 16) % 360;
     return '<div class="server-item '+active+'" data-guild="'+g.id+'">'+
       '<div class="icon" style="background:hsl('+hue+',30%,18%);color:hsl('+hue+',70%,70%)">'+escHtml(initial)+'</div>'+
@@ -264,14 +217,11 @@ function renderServerList(){
       (tradeCount > 0 ? '<span class="scount">'+tradeCount+'</span>' : '')+
     '</div>';
   }).join('');
-
-  // Click handler: show trade channels for that server
   container.querySelectorAll('.server-item').forEach(el => {
     el.addEventListener('click', function(){
       const gid = this.dataset.guild;
       state.selectedGuildId = gid;
-      renderServerList(); // re-render to show active
-      // Show only trade channels for this guild
+      renderServerList();
       const chs = state.filteredChannels.filter(c => c.guildId === gid);
       if(chs.length === 0){
         document.getElementById('channelList').innerHTML = '<div class="empty-state">No trade channels in this server.</div>';
@@ -288,7 +238,6 @@ function renderFilteredChannels(){
     container.innerHTML = '<div class="empty-state">No trade/trading channels found in any server.</div>';
     return;
   }
-  // Show first guild's channels by default
   if(!state.selectedGuildId || !state.filteredChannels.some(c=>c.guildId===state.selectedGuildId)){
     state.selectedGuildId = state.filteredChannels[0].guildId;
     renderServerList();
@@ -345,12 +294,11 @@ async function joinAllServers(){
       await API.joinGuild(state.token, code);
       joined++;
       showToast('Joined: '+code,'success');
-      await sleep(rand(3000, 6000)); // humanized delay between joins
-    } catch(e){ /* already in or invalid */ await sleep(rand(1000,3000)); }
+      await sleep(rand(3000, 6000));
+    } catch(e){ await sleep(rand(1000,3000)); }
   }
   if(joined>0) showToast('Joined '+joined+' server(s)','success');
   else showToast('No new servers joined (maybe already in)','info');
-  // Reload guilds/channels
   if(joined>0){ await sleep(2000); await loadGuildsAndChannels(); }
 }
 
@@ -371,7 +319,6 @@ function renderAutoMessages(){
   });
 }
 
-// ─── Message Sender with Anti-Detect ─────────────────────────────────────
 async function startSending(){
   if(state.running) return;
   const msg = state.messages[0];
@@ -382,20 +329,15 @@ async function startSending(){
   const minDelay = (parseFloat(document.getElementById('minDelay').value)||5)*1000;
   const maxDelay = (parseFloat(document.getElementById('maxDelay').value)||12)*1000;
   if(minDelay>=maxDelay){ showToast('Max must be > min delay','error'); return; }
-
-  // Save settings
   state.sendCount = count;
   state.minDelay = parseFloat(document.getElementById('minDelay').value)||5;
   state.maxDelay = parseFloat(document.getElementById('maxDelay').value)||12;
   localStorage.setItem('nova_sendCount',state.sendCount);
   localStorage.setItem('nova_minDelay',state.minDelay);
   localStorage.setItem('nova_maxDelay',state.maxDelay);
-
-  state.running = true;
-  state.stopped = false;
+  state.running = true; state.stopped = false;
   const total = channels.length * count;
   let sent = 0;
-
   document.getElementById('startBtn').disabled = true;
   document.getElementById('stopBtn').disabled = false;
   document.getElementById('statusText2').textContent = 'Running (anti-detect)';
@@ -403,26 +345,17 @@ async function startSending(){
   document.getElementById('totalCount').textContent = total;
   document.getElementById('sentCount').textContent = '0';
   document.getElementById('progressFill').style.width = '0%';
-
   showToast('Started — anti-detection active','success');
-
   for(let i=0; i<count; i++){
     if(state.stopped) break;
-
-    // Shuffle channel order each cycle (looks random)
     const shuffled = shuffle([...channels]);
-
     for(let j=0; j<shuffled.length; j++){
       if(state.stopped) break;
       const chId = shuffled[j];
-
       try {
-        // Anti-detection: use minDelay as base (higher than before)
         const delay = rand(minDelay, maxDelay);
         document.getElementById('statusText2').textContent = 'Wait '+(delay/1000).toFixed(1)+'s...';
         await sleep(delay);
-
-        // Human typing simulation
         await Evasion.humanTyping(state.token, chId);
         document.getElementById('statusText2').textContent = 'Sending...';
         await API.sendMsg(state.token, chId, msg);
@@ -434,8 +367,6 @@ async function startSending(){
         await sleep(rand(3000,6000));
       }
     }
-
-    // Anti-detection: random break between cycles
     if(i < count-1 && !state.stopped){
       await Evasion.maybeTakeBreak();
       if(!state.stopped){
@@ -445,7 +376,6 @@ async function startSending(){
       }
     }
   }
-
   state.running = false;
   document.getElementById('startBtn').disabled = false;
   document.getElementById('stopBtn').disabled = true;
@@ -462,14 +392,13 @@ async function startSending(){
 }
 
 function stopSending(){
-  state.stopped = true;
-  state.running = false;
+  state.stopped = true; state.running = false;
   document.getElementById('startBtn').disabled = false;
   document.getElementById('stopBtn').disabled = true;
   showToast('Stopping...','warning');
 }
 
-// ─── DM Listener (Anti-Detect: 12-20s interval) ─────────────────────────
+// ─── DM Listener ─────────────────────────────────────────────────────────
 function startDMListener(){
   if(state.dmListenerInterval) clearInterval(state.dmListenerInterval);
   state.dmListenerInterval = setInterval(async ()=>{
@@ -482,17 +411,16 @@ function startDMListener(){
         state.knownDMChannels.add(dm.id);
         const msgs = await API.getChannelMsgs(state.token, dm.id, 1);
         if(msgs && msgs.length>0 && msgs[0].author.id !== state.user.id){
-          // Humanized delay before replying
           await sleep(rand(4000, 10000));
           await API.sendMsg(state.token, dm.id, state.dmReply);
           showToast('Replied to DM from '+msgs[0].author.username,'success');
         }
       }
     } catch(_){}
-  }, rand(12000, 20000)); // randomized interval
+  }, rand(12000, 20000));
 }
 
-// ─── Friend Accepter (Anti-Detect: 10-18s interval) ─────────────────────
+// ─── Friend Accepter ─────────────────────────────────────────────────────
 function startFriendAccepter(){
   if(state.friendAccepterInterval) clearInterval(state.friendAccepterInterval);
   state.friendAccepterInterval = setInterval(async ()=>{
@@ -500,20 +428,18 @@ function startFriendAccepter(){
     try {
       const rels = await API.getFriendReqs(state.token);
       for(const rel of rels){
-        if(rel.type === 3){ // incoming friend request
+        if(rel.type === 3){
           await API.acceptFriendReq(state.token, rel.id);
           showToast('Accepted friend: '+rel.user.username,'success');
           await sleep(rand(2000, 4000));
         }
       }
     } catch(_){}
-  }, rand(10000, 18000)); // randomized interval
+  }, rand(10000, 18000));
 }
 
 // ─── Event Listeners ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function(){
-
-  // Login
   $('loginBtn').addEventListener('click', function(){
     const token = $('tokenInput').value.trim();
     if(token) login(token);
@@ -521,8 +447,6 @@ document.addEventListener('DOMContentLoaded', function(){
   $('tokenInput').addEventListener('keydown', function(e){
     if(e.key === 'Enter') $('loginBtn').click();
   });
-
-  // Invites
   $('addInviteBtn').addEventListener('click', function(){
     const val = $('inviteInput').value.trim();
     if(!val){ showToast('Enter an invite link','error'); return; }
@@ -536,8 +460,6 @@ document.addEventListener('DOMContentLoaded', function(){
     if(e.key === 'Enter') $('addInviteBtn').click();
   });
   $('joinServersBtn').addEventListener('click', joinAllServers);
-
-  // Messages
   $('addMsgBtn').addEventListener('click', function(){
     const val = $('autoMsgInput').value.trim();
     if(!val){ showToast('Enter a message','error'); return; }
@@ -550,8 +472,6 @@ document.addEventListener('DOMContentLoaded', function(){
   $('autoMsgInput').addEventListener('keydown', function(e){
     if(e.key === 'Enter' && e.ctrlKey) $('addMsgBtn').click();
   });
-
-  // DM Reply
   $('saveDmReplyBtn').addEventListener('click', function(){
     const val = $('dmReplyInput').value.trim();
     state.dmReply = val;
@@ -559,23 +479,15 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('dmReplyStatus').textContent = val ? 'Active: "'+val.substring(0,30)+'..."' : 'Not set';
     showToast(val ? 'DM reply saved' : 'DM reply cleared','success');
   });
-
-  // Select / Deselect all
   $('selectAllBtn').addEventListener('click', function(){
     document.querySelectorAll('#channelList input[type="checkbox"]').forEach(cb=>cb.checked=true);
   });
   $('deselectAllBtn').addEventListener('click', function(){
     document.querySelectorAll('#channelList input[type="checkbox"]').forEach(cb=>cb.checked=false);
   });
-
-  // Start / Stop
   $('startBtn').addEventListener('click', startSending);
   $('stopBtn').addEventListener('click', stopSending);
-
-  // Logout
   $('logoutBtn').addEventListener('click', logout);
-
-  // Auto-login
   const savedToken = localStorage.getItem('nova_token');
   if(savedToken){
     $('tokenInput').value = savedToken;
