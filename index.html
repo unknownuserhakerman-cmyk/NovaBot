@@ -3,91 +3,181 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NOVA Selfbot</title>
-<link rel="stylesheet" href="style.css">
+<title>NOVA - Channel Sender</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #07070d;
+    color: #e0e0e0;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+body::before {
+    content: '';
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 15% 45%, #0d1b2a 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 15%, #1a0a2e 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 85%, #0a1a1f 0%, transparent 55%);
+    pointer-events: none; z-index: 0;
+}
+#loginScreen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; position: relative; z-index: 1; padding: 20px;
+}
+.login-card {
+    background: linear-gradient(145deg, #12121a, #0d0d15);
+    border: 1px solid #1e1e30; border-radius: 20px;
+    padding: 44px 40px; width: 100%; max-width: 420px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+}
+.login-card h1 {
+    font-size: 28px; font-weight: 800; text-align: center;
+    background: linear-gradient(135deg, #7c5cbf, #5b9aff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 4px;
+}
+.login-card .subtitle { text-align: center; color: #666; font-size: 13px; margin-bottom: 28px; }
+.input-group { margin-bottom: 16px; }
+.input-group label {
+    display: block; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.8px; color: #888; margin-bottom: 5px;
+}
+.input-group input {
+    width: 100%; padding: 11px 15px; background: #0a0a10;
+    border: 1px solid #1e1e30; border-radius: 10px; color: #fff;
+    font-size: 14px; font-family: 'Inter', sans-serif; transition: border 0.2s;
+}
+.input-group input:focus { outline: none; border-color: #5b7aff; box-shadow: 0 0 0 3px rgba(91,122,255,0.1); }
+.btn-primary {
+    width: 100%; padding: 12px;
+    background: linear-gradient(135deg, #7c5cbf, #5b7aff);
+    border: none; border-radius: 10px; color: #fff; font-size: 15px;
+    font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;
+    transition: all 0.3s; margin-top: 4px;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(91,122,255,0.3); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+#dashboard { display: none; position: relative; z-index: 1; }
+.topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px; background: rgba(10,10,18,0.85);
+    backdrop-filter: blur(14px); border-bottom: 1px solid #1a1a2e;
+    position: sticky; top: 0; z-index: 100;
+}
+.topbar .logo {
+    font-size: 20px; font-weight: 800;
+    background: linear-gradient(135deg, #7c5cbf, #5b9aff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.topbar .status-area { display: flex; align-items: center; gap: 14px; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.status-dot.online { background: #43b581; box-shadow: 0 0 8px #43b581; }
+.status-dot.offline { background: #f04747; box-shadow: 0 0 8px #f04747; }
+.status-text { font-size: 13px; color: #888; }
+.topbar .user-tag {
+    font-size: 12px; color: #aaa; padding: 5px 12px;
+    background: #14141f; border-radius: 8px; border: 1px solid #1e1e30;
+}
+.dashboard-grid { padding: 24px 28px; max-width: 800px; margin: 0 auto; }
+.card {
+    background: linear-gradient(145deg, #12121a, #0d0d15);
+    border: 1px solid #1a1a2e; border-radius: 16px; padding: 22px; margin-bottom: 20px;
+}
+.card h3 {
+    font-size: 13px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; color: #888; margin-bottom: 14px;
+}
+.form-group { margin-bottom: 12px; }
+.form-group label {
+    display: block; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px; color: #666; margin-bottom: 4px;
+}
+textarea {
+    width: 100%; height: 100px; padding: 11px 13px;
+    background: #0a0a10; border: 1px solid #1e1e30; border-radius: 10px;
+    color: #e0e0e0; font-size: 13px; font-family: 'Inter', monospace;
+    resize: vertical;
+}
+textarea:focus { outline: none; border-color: #5b7aff; }
+input[type="text"], input[type="number"] {
+    width: 100%; padding: 10px 14px; background: #0a0a10;
+    border: 1px solid #1e1e30; border-radius: 8px; color: #e0e0e0;
+    font-size: 13px; font-family: 'Inter', sans-serif;
+}
+input:focus { outline: none; border-color: #5b7aff; }
+.form-row { display: flex; gap: 12px; margin-bottom: 12px; }
+.form-row .form-group { flex: 1; }
+.channel-list {
+    max-height: 250px; overflow-y: auto; background: #0a0a10;
+    border-radius: 10px; border: 1px solid #1a1a2e; padding: 6px; margin-bottom: 12px;
+}
+.channel-list::-webkit-scrollbar { width: 4px; }
+.channel-list::-webkit-scrollbar-track { background: transparent; }
+.channel-list::-webkit-scrollbar-thumb { background: #2a2a40; border-radius: 4px; }
+.channel-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 9px; border-radius: 6px; font-size: 12px; transition: background 0.2s;
+}
+.channel-item:hover { background: #14141f; }
+.channel-item input[type="checkbox"] { accent-color: #7c5cbf; width: 14px; height: 14px; }
+.channel-item .name { color: #ccc; font-weight: 500; }
+.channel-item .id { color: #555; font-size: 10px; margin-left: auto; font-family: monospace; }
+.btn {
+    padding: 9px 20px; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif;
+    cursor: pointer; transition: all 0.2s;
+}
+.btn-primary2 { background: linear-gradient(135deg, #7c5cbf, #5b7aff); color: #fff; }
+.btn-primary2:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(91,122,255,0.3); }
+.btn-primary2:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+.btn-danger { background: #2a1515; border: 1px solid #3a2020; color: #e05555; }
+.btn-danger:hover { background: #3a2020; }
+.btn-secondary { background: #1a1a2e; border: 1px solid #2a2a40; color: #ccc; }
+.btn-secondary:hover { background: #222238; }
+.status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; background: #0a0a10; border-radius: 10px;
+    border: 1px solid #1a1a2e; font-size: 12px; margin-bottom: 10px;
+}
+.progress-bar { width: 100%; height: 4px; background: #1a1a2e; border-radius: 2px; overflow: hidden; margin-top: 6px; }
+.progress-bar .fill { height: 100%; background: linear-gradient(90deg, #7c5cbf, #5b7aff); width: 0%; transition: width 0.3s; }
+.btn-group { display: flex; gap: 8px; }
+.btn-group .btn { flex: 1; }
+.toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: #12121a; border: 1px solid #1e1e30; border-radius: 12px;
+    padding: 13px 18px; font-size: 13px; color: #e0e0e0;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 9999;
+    display: none; animation: slideIn 0.3s ease;
+}
+@keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.toast.success { border-left: 3px solid #43b581; }
+.toast.error { border-left: 3px solid #f04747; }
+.toast.info { border-left: 3px solid #5b7aff; }
+.empty-state { color: #444; font-size: 12px; padding: 16px; text-align: center; }
+.logout-row { display: flex; justify-content: flex-end; padding: 0 28px 24px; max-width: 800px; margin: 0 auto; }
+.checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.checkbox-row input[type="checkbox"] { accent-color: #7c5cbf; width: 14px; height: 14px; }
+.checkbox-row label { font-size: 12px; color: #aaa; cursor: pointer; }
+</style>
 </head>
 <body>
 
 <div id="toast" class="toast"></div>
 
-<div class="captcha-overlay" id="captchaOverlay">
-    <div class="captcha-popup">
-        <button class="close-btn" id="captchaCloseBtn">&times;</button>
-        <h3>🧩 Solve hCaptcha</h3>
-        <p>Solve the captcha to create your Discord account.</p>
-        <div class="captcha-frame" id="captchaFrame">
-            <iframe id="captchaIframe" srcdoc=""></iframe>
-        </div>
-        <button class="btn-small" id="captchaVerifyBtn">✅ I've Solved the Captcha</button>
-    </div>
-</div>
-
 <div id="loginScreen">
-    <div class="login-wrapper">
-        <div class="login-card">
-            <h1>✦ NOVA</h1>
-            <p class="subtitle">Discord Automation Interface</p>
-            <div class="input-group">
-                <label>Discord Token</label>
-                <input type="password" id="tokenInput" placeholder="Enter your user token...">
-            </div>
-            <div class="input-group">
-                <label>Quick Select Alt</label>
-                <select id="altSelect">
-                    <option value="">— Login with saved alt —</option>
-                </select>
-            </div>
-            <button class="btn-primary" id="loginBtn">Initialize</button>
-            <p style="text-align:center; margin-top:14px; font-size:11px; color:#444;">Token stored locally. Never sent to any server.</p>
-            <p style="text-align:center; margin-top:4px; font-size:10px; color:#333;">⚠ User tokens violate Discord ToS. Use at own risk.</p>
+    <div class="login-card">
+        <h1>✦ NOVA</h1>
+        <p class="subtitle">Channel Message Sender</p>
+        <div class="input-group">
+            <label>Discord Token</label>
+            <input type="password" id="tokenInput" placeholder="Enter your user token...">
         </div>
-
-        <div class="alt-panel">
-            <h2>🛸 Alt Manager <span class="badge">BETA</span></h2>
-            <p>Create, manage, and auto-join servers with alt accounts.</p>
-            <div class="alt-tabs">
-                <button class="alt-tab active" data-tab="create-tab">Create</button>
-                <button class="alt-tab" data-tab="import-tab">Import</button>
-                <button class="alt-tab" data-tab="alts-tab">My Alts</button>
-                <button class="alt-tab" data-tab="invites-tab">Invites</button>
-            </div>
-            <div class="alt-section active" id="create-tab">
-                <p style="font-size:11px; color:#666; margin-bottom:10px;">Fill in details to create a new Discord account.</p>
-                <div class="alt-form-row">
-                    <div class="input-group"><label>Email</label><input type="text" id="createEmail" placeholder="email@example.com"></div>
-                    <div class="input-group"><label>Password</label><input type="password" id="createPassword" placeholder="Min 8 chars"></div>
-                </div>
-                <div class="alt-form-row">
-                    <div class="input-group"><label>Username</label><input type="text" id="createUsername" placeholder="CoolName"></div>
-                    <div class="input-group"><label>Birthday</label><input type="text" id="createDob" placeholder="2000-01-01"></div>
-                </div>
-                <div class="input-group"><label>2Captcha API Key (optional)</label><input type="password" id="createCaptchaKey" placeholder="Leave empty for manual solving"></div>
-                <button class="btn-small" id="createAltBtn" style="width:100%;">Create Account</button>
-            </div>
-            <div class="alt-section" id="import-tab">
-                <p style="font-size:11px; color:#666; margin-bottom:10px;">Import an existing alt account with its token.</p>
-                <div class="alt-form-row">
-                    <div class="input-group"><label>Email</label><input type="text" id="importEmail" placeholder="alt@email.com"></div>
-                    <div class="input-group"><label>Token</label><input type="password" id="importToken" placeholder="Discord user token"></div>
-                </div>
-                <button class="btn-small secondary" id="importAltBtn" style="width:100%;">Import Alt</button>
-            </div>
-            <div class="alt-section" id="alts-tab">
-                <div id="altListContainer"><div class="empty-state">No alt accounts saved yet.</div></div>
-                <div style="display:flex; gap:6px; margin-top:8px;">
-                    <button class="btn-small success" id="joinAllBtn" style="flex:1;">▶ Join All Servers</button>
-                    <button class="btn-small danger" id="clearAltsBtn">Clear All</button>
-                </div>
-            </div>
-            <div class="alt-section" id="invites-tab">
-                <p style="font-size:11px; color:#666; margin-bottom:10px;">Save invite links. Alts will auto-join these servers.</p>
-                <div class="invite-input-row">
-                    <input type="text" id="inviteInput" placeholder="discord.gg/example">
-                    <button class="btn-small secondary" id="addInviteBtn">+ Add</button>
-                </div>
-                <div class="invite-list" id="inviteListContainer"><div class="empty-state">No invites added yet.</div></div>
-            </div>
-        </div>
+        <button class="btn-primary" id="loginBtn">Initialize</button>
+        <p style="text-align:center; margin-top:14px; font-size:11px; color:#444;">Token stored locally. Never sent anywhere.</p>
+        <p style="text-align:center; margin-top:4px; font-size:10px; color:#333;">⚠ Selfbots violate Discord ToS. Use at own risk.</p>
     </div>
 </div>
 
@@ -100,48 +190,62 @@
             <span class="user-tag" id="userTag">—</span>
         </div>
     </div>
+
     <div class="dashboard-grid">
         <div class="card">
-            <h3>📨 DM Auto-Reply <span class="badge">Once per user</span></h3>
-            <div class="flex-row">
-                <div class="flex-left"><span style="font-size:12px;color:#aaa;">Auto-Reply</span><div class="toggle" id="dmToggle"></div></div>
-                <button class="btn-small secondary" id="fetchDMsBtn">Refresh DMs</button>
+            <h3>📢 Channel Sender</h3>
+            
+            <div class="form-group">
+                <label>Message to Send</label>
+                <textarea id="messageInput" placeholder="Enter the message you want to send..."></textarea>
             </div>
-            <div class="form-group" style="margin-bottom:10px;"><label>Welcome Message</label><textarea id="dmReplyMessage">Hey! Thanks for reaching out. 🚀</textarea></div>
-            <div style="background:#0a0a10;border-radius:8px;padding:10px;font-size:11px;color:#888;">
-                <div>✅ Auto-accepts friend requests</div>
-                <div>✅ Sends welcome ONCE per user</div>
-                <div id="dmStats">📊 0 messages sent</div>
-            </div>
-        </div>
-        <div class="card">
-            <h3>📢 Channel Spammer <span class="badge">Batch</span></h3>
-            <div class="flex-row">
-                <div class="flex-left"><span style="font-size:12px;color:#aaa;">Spammer</span><div class="toggle" id="spamToggle"></div></div>
-                <button class="btn-small secondary" id="fetchChannelsBtn">Load Channels</button>
-            </div>
-            <div class="form-group"><label>Message</label><textarea id="spamMessage" placeholder="Message to spam..."></textarea></div>
+
             <div class="form-row">
-                <div class="form-group"><label>Delay (ms)</label><input type="number" id="spamDelay" value="1500" min="500"></div>
-                <div class="form-group"><label>Repeat</label><input type="number" id="spamCount" value="3" min="1" max="100"></div>
+                <div class="form-group">
+                    <label>Send Count (per channel)</label>
+                    <input type="number" id="sendCount" value="3" min="1" max="100">
+                </div>
+                <div class="form-group">
+                    <label>Min Delay (seconds)</label>
+                    <input type="number" id="minDelay" value="3" min="1" step="0.5">
+                </div>
+                <div class="form-group">
+                    <label>Max Delay (seconds)</label>
+                    <input type="number" id="maxDelay" value="8" min="2" step="0.5">
+                </div>
             </div>
-            <div class="channel-list" id="channelListContainer"><div class="empty-state">Click "Load Channels" first.</div></div>
-            <div class="queue-status"><span>Status: <span class="count stopped" id="spamStatus">Idle</span></span><span>Queued: <span id="spamQueueCount">0</span></span></div>
-            <div class="progress-bar"><div class="fill" id="spamProgress"></div></div>
-        </div>
-        <div class="card">
-            <h3>🔑 Token Checker <span class="badge">Validate all</span></h3>
-            <p style="font-size:12px;color:#888;margin-bottom:10px;">Check which stored alt tokens are still valid.</p>
-            <div id="tokenCheckResults" style="background:#0a0a10;border-radius:8px;padding:10px;font-size:11px;max-height:130px;overflow-y:auto;margin-bottom:10px;"><div class="empty-state">No results yet.</div></div>
-            <button class="btn-small secondary" id="checkTokensBtn" style="width:100%;">Check All Tokens</button>
-        </div>
-        <div class="card">
-            <h3>⚙ Settings</h3>
-            <div class="form-group" style="margin-bottom:10px;"><label>2Captcha API Key</label><input type="password" id="captchaKeyInput" placeholder="2captcha.com API key"></div>
-            <div style="display:flex;gap:6px;"><button class="btn-small secondary" id="exportDataBtn" style="flex:1;">Export Data</button><button class="btn-small danger" id="logoutBtn" style="flex:1;">Logout</button></div>
+
+            <div class="checkbox-row">
+                <input type="checkbox" id="typingToggle" checked>
+                <label for="typingToggle">Show typing indicator before each message</label>
+            </div>
+
+            <div class="btn-group" style="margin-bottom:12px;">
+                <button class="btn btn-secondary" id="loadChannelsBtn">🔄 Load Channels</button>
+                <button class="btn btn-secondary" id="selectAllBtn">✓ Select All</button>
+                <button class="btn btn-secondary" id="deselectAllBtn">✕ Deselect All</button>
+            </div>
+
+            <div class="channel-list" id="channelList">
+                <div class="empty-state">Click "Load Channels" after logging in.</div>
+            </div>
+
+            <div class="status-bar">
+                <span>Status: <strong id="statusText2">Idle</strong></span>
+                <span>Sent: <span id="sentCount">0</span> / <span id="totalCount">0</span></span>
+            </div>
+            <div class="progress-bar"><div class="fill" id="progressFill"></div></div>
+
+            <div class="btn-group" style="margin-top:10px;">
+                <button class="btn btn-primary2" id="startBtn">▶ Start Sending</button>
+                <button class="btn btn-danger" id="stopBtn" disabled>⏹ Stop</button>
+            </div>
         </div>
     </div>
-    <div class="logout-section"><div class="card"><p>⚠ <strong>Important:</strong> Selfbots violate Discord ToS. Use at your own risk on alts only.</p></div></div>
+
+    <div class="logout-row">
+        <button class="btn btn-danger" id="logoutBtn">Logout</button>
+    </div>
 </div>
 
 <script src="script.js"></script>
